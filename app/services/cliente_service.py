@@ -3,7 +3,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.cliente_repo import ClienteRepository
 from app.schemas.cliente_schemas import ClienteRequest, ClienteResponse, ClienteUpdate
-from app.core.security import hash_senha
+from app.core.security import get_senha_hash
 
 class ClienteService:
     def __init__(self, session: AsyncSession):
@@ -32,7 +32,7 @@ class ClienteService:
             email=cliente.email,
             cpf=cliente.cpf,
             telefone=cliente.telefone,
-            senha_hash=hash_senha(cliente.senha)
+            hashed_senha=get_senha_hash(cliente.senha)
         )
         return ClienteResponse.model_validate(cliente)
 
@@ -76,7 +76,7 @@ class ClienteService:
                 )
 
         if "senha" in update_data:
-            update_data["senha_hash"] = hash_senha(update_data.pop("senha"))
+            update_data["hashed_senha"] = get_senha_hash(update_data.pop("senha"))
 
         cliente = await self.repo.update(id_cliente, **update_data)
         return ClienteResponse.model_validate(cliente)

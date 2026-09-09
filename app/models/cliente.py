@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
-
 from sqlalchemy import Column, DateTime, Integer, String
+
 from app.models.base import Base
 
 class Cliente(Base):
@@ -10,5 +10,5 @@ class Cliente(Base):
     email = Column(String, unique=True, index=True)
     cpf = Column(String, unique=True, index=True)
     telefone = Column(String)
-    senha_hash = Column(String)
+    hashed_senha = Column(String)
     created_at = Column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
