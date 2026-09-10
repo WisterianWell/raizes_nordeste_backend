@@ -5,4 +5,5 @@ class TokenResponse(BaseModel):
     token_type: str
 
 class TokenData(BaseModel):
-    id_cliente: str | None = None
+    sub: str | None = None
+    role: str | None = None

@@ -23,6 +23,13 @@ class Settings(BaseSettings):
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 30
 
+    # Admin padráo
+    admin_email: str | None = None
+    admin_senha: str | None = None
+    admin_nome: str = "Administrador"
+    admin_cpf: str = "00000000000"
+    admin_telefone: str = "00000000000"
+
 @lru_cache
 def get_settings() -> Settings:
     return Settings()
