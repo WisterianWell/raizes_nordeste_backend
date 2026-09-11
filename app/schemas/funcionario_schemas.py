@@ -3,6 +3,7 @@ from pydantic import BaseModel, EmailStr
 from app.enums import CargoFunc
 
 class FuncionarioRequest(BaseModel):
+    id_unidade: int
     nome: str
     email: EmailStr
     cpf: str
@@ -22,6 +23,7 @@ class FuncionarioUpdate(BaseModel):
 
 class FuncionarioResponse(BaseModel):
     id_funcionario: int
+    id_unidade: int | None
     nome: str
     email: EmailStr
     cpf: str

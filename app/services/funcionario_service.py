@@ -2,12 +2,14 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.funcionario_repo import FuncionarioRepository
+from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.funcionario_schemas import FuncionarioResponse, FuncionarioRequest, FuncionarioUpdate
 from app.core.security import get_senha_hash
 
 class FuncionarioService:
     def __init__(self, session: AsyncSession):
         self.repo = FuncionarioRepository(session)
+        self.unidade_repo = UnidadeRepository(session)
 
     async def create_funcionario(self, funcionario: FuncionarioRequest) -> FuncionarioResponse:
         existing_funcionario = await self.repo.get_by_email(funcionario.email)
@@ -22,7 +24,14 @@ class FuncionarioService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="CPF já cadastrado."
             )
+        unidade = await self.unidade_repo.get_by_id(funcionario.id_unidade)
+        if not unidade:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Unidade não encontrada."
+            )
         funcionario = await self.repo.create(
+            id_unidade=funcionario.id_unidade,
             nome=funcionario.nome,
             email=funcionario.email,
             cpf=funcionario.cpf,
@@ -66,6 +75,13 @@ class FuncionarioService:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail="CPF já cadastrado."
+                )
+        if "id_unidade" in update_data:
+            unidade = await self.unidade_repo.get_by_id(update_data["id_unidade"])
+            if not unidade:
+                raise HTTPException(
+                    status_code=status.HTTP_404_NOT_FOUND,
+                    detail="Unidade não encontrada."
                 )
         if "senha" in update_data:
             update_data["hashed_senha"] = get_senha_hash(update_data.pop("senha"))

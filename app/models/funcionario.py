@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import DateTime, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -8,6 +8,7 @@ from app.models.base import Base
 class Funcionario(Base):
     __tablename__ = "funcionarios"
     id_funcionario: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id_unidade: Mapped[int | None] = mapped_column(ForeignKey("unidades.id_unidade"), index=True)
     nome: Mapped[str] = mapped_column(String, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
     cpf: Mapped[str] = mapped_column(String, unique=True, index=True)
