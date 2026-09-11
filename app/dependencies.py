@@ -12,7 +12,7 @@ from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.cliente_repo import ClienteRepository
 from app.repositories.funcionario_repo import FuncionarioRepository
-from app.repositories.enums import CargoFunc, TipoUsuario
+from app.enums import CargoFunc, TipoUsuario
 from app.schemas.auth_schemas import TokenData
 
 settings = get_settings()

@@ -7,11 +7,11 @@ from app.core.security import get_senha_hash
 from app.database import sessionmanager
 from app.models.base import Base
 from app.models.funcionario import Funcionario
-from app.repositories.enums import CargoFunc
+from app.enums import CargoFunc
 from app.repositories.funcionario_repo import FuncionarioRepository
 from app.api.router import api_router
 
-async def create_admin_funcionario(settings: Settings) -> None:
+async def create_admin(settings: Settings) -> None:
     if not settings.admin_email or not settings.admin_senha:
         return
 
@@ -36,30 +36,25 @@ async def create_admin_funcionario(settings: Settings) -> None:
 @asynccontextmanager
 async def lifespan(app: FastAPI):
     settings = get_settings()
-
     await sessionmanager.init(settings.database_url)
     await sessionmanager.create_all(Base)
-    await create_admin_funcionario(settings)
+    await create_admin(settings)
     yield
-
     await sessionmanager.close()
 
 
 def create_app() -> FastAPI:
     settings = get_settings()
-
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
         lifespan=lifespan,
     )
-
     app.include_router(api_router)
 
     @app.get("/health", summary="verfica a saúde da API")
     async def health_check() -> dict:
         return {"status": "ok"}
-
     return app
 
 app = create_app()

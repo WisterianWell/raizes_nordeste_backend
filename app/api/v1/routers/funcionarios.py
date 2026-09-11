@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import requer_cargo
 from app.database import get_db_session
 from app.models.funcionario import Funcionario
-from app.repositories.enums import CargoFunc
+from app.enums import CargoFunc
 from app.schemas.funcionario_schemas import FuncionarioRequest, FuncionarioResponse, FuncionarioUpdate
 from app.services.funcionario_service import FuncionarioService
 

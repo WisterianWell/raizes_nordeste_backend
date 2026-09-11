@@ -6,7 +6,7 @@ from app.dependencies import get_current_usuario, requer_cargo, requer_cliente_o
 from app.database import get_db_session
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
-from app.repositories.enums import CargoFunc
+from app.enums import CargoFunc
 from app.schemas.cliente_schemas import ClienteRequest, ClienteResponse, ClienteUpdate
 from app.services.cliente_service import ClienteService
 

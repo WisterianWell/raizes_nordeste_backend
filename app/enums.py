@@ -9,3 +9,10 @@ class CargoFunc(str, Enum):
     GERENTE = "GERENTE"
     ATENDENTE = "ATENDENTE"
     COZINHA = "COZINHA"
+
+class CanalPedido(str, Enum):
+    APP = "APP"
+    TOTEM = "TOTEM"
+    BALCAO = "BALCAO"
+    PICKUP = "PICKUP"
+    WEB = "WEB"

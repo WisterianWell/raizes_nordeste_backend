@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 
-from app.repositories.enums import CargoFuncionario
+from app.enums import CargoFunc
 
 class FuncionarioRequest(BaseModel):
     nome: str
@@ -8,7 +8,7 @@ class FuncionarioRequest(BaseModel):
     cpf: str
     telefone: str
     senha: str
-    cargo: CargoFuncionario
+    cargo: CargoFunc
     model_config = {"use_enum_values": True}
 
 class FuncionarioUpdate(BaseModel):
@@ -17,7 +17,7 @@ class FuncionarioUpdate(BaseModel):
     cpf: str | None = None
     telefone: str | None = None
     senha: str | None = None
-    cargo: CargoFuncionario | None = None
+    cargo: CargoFunc | None = None
     model_config = {"use_enum_values": True}
 
 class FuncionarioResponse(BaseModel):
