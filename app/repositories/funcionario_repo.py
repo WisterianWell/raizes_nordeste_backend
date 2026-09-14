@@ -32,4 +32,14 @@ class FuncionarioRepository(BaseRepository[Funcionario]):
             )
         result = await self.session.execute(query)
         return list(result.scalars().all())
-    
+
+    async def get_by_unidade(self, id_unidade: int, offset: int = 0, limit: int = 100) -> list[Funcionario]:
+        query = (
+            select(Funcionario)
+            .where(Funcionario.id_unidade == id_unidade)
+            .offset(offset)
+            .limit(limit)
+            .order_by(Funcionario.created_at.desc())
+            )
+        result = await self.session.execute(query)
+        return list(result.scalars().all())

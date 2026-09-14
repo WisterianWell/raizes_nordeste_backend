@@ -54,6 +54,15 @@ class FuncionarioService:
         funcionarios = await self.repo.get_all_funcionarios(offset, limit)
         return [FuncionarioResponse.model_validate(funcionario) for funcionario in funcionarios]
 
+    async def get_funcionarios_by_unidade(self, id_unidade: int, offset: int = 0, limit: int = 100) -> list[FuncionarioResponse]:
+        if not await self.unidade_repo.get_by_id(id_unidade):
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Unidade não encontrada."
+            )
+        funcionarios = await self.repo.get_by_unidade(id_unidade, offset, limit)
+        return [FuncionarioResponse.model_validate(funcionario) for funcionario in funcionarios]
+
     async def update_funcionario(self, id_funcionario: int, dados: FuncionarioUpdate) -> FuncionarioResponse:
         funcionario = await self.repo.get_by_id(id_funcionario)
         if not funcionario:

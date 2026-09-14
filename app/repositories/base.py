@@ -12,8 +12,12 @@ class BaseRepository(Generic[ModelType]):
         self.model = model
         self.session = session
 
-    async def get_by_id(self, id: int) -> ModelType | None:
-        return await self.session.get(self.model, id)
+    async def get_by_id(self, *id: int) -> ModelType | None:
+        if len(id) == 1:
+            ids = id[0]
+        else:
+            ids = id
+        return await self.session.get(self.model, ids)
 
     async def get_all(
         self, offset: int = 0, limit: int = 100
@@ -30,9 +34,9 @@ class BaseRepository(Generic[ModelType]):
         return instance
 
     async def update(
-        self, id: int, **kwargs
+        self, *id: int, **kwargs
     ) -> ModelType | None:
-        instance = await self.get_by_id(id)
+        instance = await self.get_by_id(*id)
         if not instance:
             return None
         for key, value in kwargs.items():
@@ -41,8 +45,8 @@ class BaseRepository(Generic[ModelType]):
         await self.session.refresh(instance)
         return instance
 
-    async def delete(self, id: int) -> bool:
-        instance = await self.get_by_id(id)
+    async def delete(self, *id: int) -> bool:
+        instance = await self.get_by_id(*id)
         if not instance:
             return False
         await self.session.delete(instance)
