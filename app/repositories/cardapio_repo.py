@@ -8,6 +8,10 @@ class CardapioRepository(BaseRepository[Cardapio]):
     def __init__(self, session: AsyncSession):
         super().__init__(Cardapio, session)
 
+    async def create_item_cardapio(self, **kwargs) -> Cardapio:
+        instance = await self.create(**kwargs)
+        return await self.get_item_cardapio(instance.id_produto, instance.id_unidade)
+
     async def get_item_cardapio(self, id_produto: int, id_unidade: int) -> Cardapio | None:
         return await self.get_by_id(id_produto, id_unidade)
 
@@ -20,10 +24,6 @@ class CardapioRepository(BaseRepository[Cardapio]):
         query = query.offset(offset).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())
-
-    async def create_item_cardapio(self, **kwargs) -> Cardapio:
-        instance = await self.create(**kwargs)
-        return await self.get_item_cardapio(instance.id_produto, instance.id_unidade)
 
     async def update_item_cardapio(self, id_produto: int, id_unidade: int, **kwargs) -> Cardapio | None:
         instance = await self.update(id_produto, id_unidade, **kwargs)

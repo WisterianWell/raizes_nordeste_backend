@@ -1,5 +1,5 @@
 from fastapi import APIRouter
-from app.api.v1.routers import cardapios, clientes, auth, funcionarios, produtos, unidades
+from app.api.v1.routers import cardapios, clientes, auth, funcionarios, pedidos, produtos, unidades
 
 # Agregador de routers da API v1
 router = APIRouter()
@@ -8,4 +8,5 @@ router.include_router(funcionarios.router, prefix="/funcionarios", tags=["funcio
 router.include_router(unidades.router, prefix="/unidades", tags=["unidades"])
 router.include_router(produtos.router, prefix="/produtos", tags=["produtos"])
 router.include_router(cardapios.router, prefix="/cardapios", tags=["cardapios"])
+router.include_router(pedidos.router, prefix="/pedidos", tags=["pedidos"])
 router.include_router(auth.router, prefix="/auth", tags=["auth"])

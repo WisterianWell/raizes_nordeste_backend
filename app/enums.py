@@ -16,3 +16,10 @@ class CanalPedido(str, Enum):
     BALCAO = "BALCAO"
     PICKUP = "PICKUP"
     WEB = "WEB"
+
+class StatusPedido(str, Enum):
+    PENDENTE = "PENDENTE"
+    EM_PREPARO = "EM_PREPARO"
+    PRONTO = "PRONTO"
+    ENTREGUE = "ENTREGUE"
+    CANCELADO = "CANCELADO"
