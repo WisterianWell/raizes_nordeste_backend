@@ -15,8 +15,8 @@ class PedidoRepository(BaseRepository[Pedido]):
             select(Pedido)
             .where(Pedido.id_pedido == id_pedido)
             .options(
-                selectinload(Pedido.itens).
-                selectinload(ItemPedido.produto)
+                selectinload(Pedido.itens).selectinload(ItemPedido.produto),
+                selectinload(Pedido.pagamentos),
                 )
             .execution_options(populate_existing=True)
             )

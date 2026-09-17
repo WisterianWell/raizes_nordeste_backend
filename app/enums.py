@@ -23,3 +23,13 @@ class StatusPedido(str, Enum):
     PRONTO = "PRONTO"
     ENTREGUE = "ENTREGUE"
     CANCELADO = "CANCELADO"
+
+class FormaPagamento(str, Enum):
+    CARTAO_CREDITO = "CARTAO_CREDITO"
+    CARTAO_DEBITO = "CARTAO_DEBITO"
+    PIX = "PIX"
+    DINHEIRO = "DINHEIRO"
+
+class StatusPagamento(str, Enum):
+    APROVADO = "APROVADO"
+    RECUSADO = "RECUSADO"

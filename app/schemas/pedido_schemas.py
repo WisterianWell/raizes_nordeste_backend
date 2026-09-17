@@ -3,6 +3,7 @@ from datetime import datetime
 from pydantic import BaseModel, Field
 
 from app.enums import CanalPedido
+from app.schemas.pagamento_schemas import PagamentoResponse
 
 class ItemPedidoRequest(BaseModel):
     id_produto: int
@@ -32,4 +33,5 @@ class PedidoResponse(BaseModel):
     valor_total: float
     created_at: datetime
     itens: list[ItemPedidoResponse]
+    pagamentos: list[PagamentoResponse]
     model_config = {"from_attributes": True}
