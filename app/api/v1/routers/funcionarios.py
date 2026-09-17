@@ -24,18 +24,6 @@ async def create_funcionario(
 ) -> FuncionarioResponse:
     return await service.create_funcionario(data)
 
-@router.get("/unidade/{id_unidade}")
-async def get_funcionarios_by_unidade(
-    id_unidade: int,
-    service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
-    current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
-        )],
-    offset: int = 0,
-    limit: int = 100,
-) -> list[FuncionarioResponse]:
-    return await service.get_funcionarios_by_unidade(id_unidade, offset, limit)
-
 @router.get("/{id_funcionario}")
 async def get_funcionario_by_id(
     id_funcionario: int,
@@ -47,15 +35,16 @@ async def get_funcionario_by_id(
     return await service.get_funcionario_by_id(id_funcionario)
 
 @router.get("/")
-async def get_all_funcionarios(
+async def get_funcionarios(
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
         requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
         )],
+    id_unidade: int | None = None,
     offset: int = 0,
     limit: int = 100,
 ) -> list[FuncionarioResponse]:
-    return await service.get_all_funcionarios(offset, limit)
+    return await service.get_funcionarios(id_unidade, offset, limit)
 
 @router.patch("/{id_funcionario}")
 async def update_funcionario(

@@ -24,18 +24,6 @@ async def create_produto(
 ) -> ProdutoResponse:
     return await service.create_produto(data)
 
-@router.get("/categoria/{categoria}")
-async def get_produtos_by_categoria(
-    categoria: str,
-    service: Annotated[ProdutoService, Depends(get_produto_service)],
-    current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
-        )],
-    offset: int = 0,
-    limit: int = 100,
-) -> list[ProdutoResponse]:
-    return await service.get_produtos_by_categoria(categoria, offset, limit)
-
 @router.get("/{id_produto}")
 async def get_produto_by_id(
     id_produto: int,
@@ -47,15 +35,16 @@ async def get_produto_by_id(
     return await service.get_produto_by_id(id_produto)
 
 @router.get("/")
-async def get_all_produtos(
+async def get_produtos(
     service: Annotated[ProdutoService, Depends(get_produto_service)],
     current_usuario: Annotated[Funcionario, Depends(
         requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
         )],
+    categoria: str | None = None,
     offset: int = 0,
     limit: int = 100,
 ) -> list[ProdutoResponse]:
-    return await service.get_all_produtos(offset, limit)
+    return await service.get_produtos(categoria, offset, limit)
 
 @router.patch("/{id_produto}")
 async def update_produto(

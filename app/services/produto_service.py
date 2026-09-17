@@ -24,12 +24,10 @@ class ProdutoService:
             )
         return ProdutoResponse.model_validate(produto)
 
-    async def get_all_produtos(self, offset: int = 0, limit: int = 100) -> list[ProdutoResponse]:
-        produtos = await self.repo.get_all_produtos(offset, limit)
-        return [ProdutoResponse.model_validate(produto) for produto in produtos]
-
-    async def get_produtos_by_categoria(self, categoria: str, offset: int = 0, limit: int = 100) -> list[ProdutoResponse]:
-        produtos = await self.repo.get_by_categoria(categoria, offset, limit)
+    async def get_produtos(
+        self, categoria: str | None = None, offset: int = 0, limit: int = 100
+    ) -> list[ProdutoResponse]:
+        produtos = await self.repo.get_produtos(categoria, offset, limit)
         return [ProdutoResponse.model_validate(produto) for produto in produtos]
 
     async def update_produto(self, id_produto: int, dados: ProdutoUpdate) -> ProdutoResponse:

@@ -29,7 +29,7 @@ async def create_cardapio_item(
 ) -> CardapioResponse:
     return await service.create_cardapio(data)
 
-@router.get("/unidade/{id_unidade}")
+@router.get("/")
 async def get_cardapio_by_unidade(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
@@ -38,7 +38,7 @@ async def get_cardapio_by_unidade(
 ) -> list[CardapioPublicoResponse]:
     return await service.get_cardapio_by_unidade(id_unidade, offset, limit, apenas_disponiveis=True)
 
-@router.get("/unidade/{id_unidade}/estoque")
+@router.get("/estoque")
 async def get_estoque_by_unidade(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],

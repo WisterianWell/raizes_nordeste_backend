@@ -23,23 +23,12 @@ class FuncionarioRepository(BaseRepository[Funcionario]):
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_all_funcionarios(self, offset: int = 0, limit: int = 100) -> list[Funcionario]:
-        query = (
-            select(Funcionario)
-            .offset(offset)
-            .limit(limit)
-            .order_by(Funcionario.created_at.desc())
-            )
-        result = await self.session.execute(query)
-        return list(result.scalars().all())
-
-    async def get_by_unidade(self, id_unidade: int, offset: int = 0, limit: int = 100) -> list[Funcionario]:
-        query = (
-            select(Funcionario)
-            .where(Funcionario.id_unidade == id_unidade)
-            .offset(offset)
-            .limit(limit)
-            .order_by(Funcionario.created_at.desc())
-            )
+    async def get_funcionarios(
+        self, id_unidade: int | None = None, offset: int = 0, limit: int = 100
+    ) -> list[Funcionario]:
+        query = select(Funcionario)
+        if id_unidade is not None:
+            query = query.where(Funcionario.id_unidade == id_unidade)
+        query = query.offset(offset).limit(limit).order_by(Funcionario.created_at.desc())
         result = await self.session.execute(query)
         return list(result.scalars().all())
