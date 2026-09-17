@@ -47,7 +47,7 @@ class CardapioService:
         return CardapioResponse.model_validate(item)
 
     async def get_cardapio_by_unidade(
-        self, id_unidade: int, offset: int = 0, limit: int = 100, apenas_disponiveis: bool = False
+        self, id_unidade: int, offset: int = 0, limit: int = 10, apenas_disponiveis: bool = False
     ) -> list[CardapioResponse]:
         itens = await self.repo.get_itens_by_unidade(id_unidade, offset, limit, apenas_disponiveis)
         return [CardapioResponse.model_validate(item) for item in itens]

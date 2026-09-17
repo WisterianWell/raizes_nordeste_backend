@@ -40,7 +40,7 @@ class ClienteService:
             )
         return ClienteResponse.model_validate(cliente)
 
-    async def get_all_clientes(self, offset: int = 0, limit: int = 100) -> list[ClienteResponse]:
+    async def get_all_clientes(self, offset: int = 0, limit: int = 10) -> list[ClienteResponse]:
         clientes = await self.repo.get_all_clientes(offset, limit)
         return [ClienteResponse.model_validate(cliente) for cliente in clientes]
 

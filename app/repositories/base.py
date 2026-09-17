@@ -20,7 +20,7 @@ class BaseRepository(Generic[ModelType]):
         return await self.session.get(self.model, ids)
 
     async def get_all(
-        self, offset: int = 0, limit: int = 100
+        self, offset: int = 0, limit: int = 10
     ) -> list[ModelType]:
         query = select(self.model).offset(offset).limit(limit)
         result = await self.session.execute(query)

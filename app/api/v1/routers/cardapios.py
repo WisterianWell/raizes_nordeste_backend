@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import requer_cargo
 from app.database import get_db_session
 from app.models.funcionario import Funcionario
-from app.enums import CargoFunc
+from app.cargos import CARGOS_ADMIN
 from app.schemas.cardapio_schemas import (
     CardapioPublicoResponse,
     CardapioRequest,
@@ -24,7 +24,7 @@ async def create_cardapio_item(
     data: CardapioRequest,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> CardapioResponse:
     return await service.create_cardapio(data)
@@ -34,7 +34,7 @@ async def get_cardapio_by_unidade(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[CardapioPublicoResponse]:
     return await service.get_cardapio_by_unidade(id_unidade, offset, limit, apenas_disponiveis=True)
 
@@ -43,10 +43,10 @@ async def get_estoque_by_unidade(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[CardapioResponse]:
     return await service.get_cardapio_by_unidade(id_unidade, offset, limit, apenas_disponiveis=False)
 
@@ -56,7 +56,7 @@ async def get_cardapio_item(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> CardapioResponse:
     return await service.get_item(id_produto, id_unidade)
@@ -68,7 +68,7 @@ async def update_cardapio_item(
     data: CardapioUpdate,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> CardapioResponse:
     return await service.update_item(id_produto, id_unidade, data)
@@ -79,7 +79,7 @@ async def delete_cardapio_item(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ):
     await service.delete_item(id_produto, id_unidade)

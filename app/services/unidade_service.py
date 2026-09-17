@@ -25,7 +25,7 @@ class UnidadeService:
             )
         return UnidadeResponse.model_validate(unidade)
 
-    async def get_all_unidades(self, offset: int = 0, limit: int = 100) -> list[UnidadeResponse]:
+    async def get_all_unidades(self, offset: int = 0, limit: int = 10) -> list[UnidadeResponse]:
         unidades = await self.repo.get_all_unidades(offset, limit)
         return [UnidadeResponse.model_validate(unidade) for unidade in unidades]
 

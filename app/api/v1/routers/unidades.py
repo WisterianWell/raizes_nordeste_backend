@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import requer_cargo
 from app.database import get_db_session
 from app.models.funcionario import Funcionario
-from app.enums import CargoFunc
+from app.cargos import CARGOS_ADMIN
 from app.schemas.unidade_schemas import UnidadeRequest, UnidadeResponse, UnidadeUpdate
 from app.services.unidade_service import UnidadeService
 
@@ -19,7 +19,7 @@ async def create_unidade(
     data: UnidadeRequest,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> UnidadeResponse:
     return await service.create_unidade(data)
@@ -29,7 +29,7 @@ async def get_unidade_by_id(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> UnidadeResponse:
     return await service.get_unidade_by_id(id_unidade)
@@ -38,10 +38,10 @@ async def get_unidade_by_id(
 async def get_all_unidades(
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[UnidadeResponse]:
     return await service.get_all_unidades(offset, limit)
 
@@ -51,7 +51,7 @@ async def update_unidade(
     data: UnidadeUpdate,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> UnidadeResponse:
     return await service.update_unidade(id_unidade, data)
@@ -61,7 +61,7 @@ async def delete_unidade(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ):
     await service.delete_unidade(id_unidade)

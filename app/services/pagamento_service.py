@@ -56,7 +56,7 @@ class PagamentoService:
         return PagamentoResponse.model_validate(pagamento)
 
     async def get_pagamentos_by_pedido(
-        self, id_pedido: int, current_usuario: Cliente | Funcionario, offset: int = 0, limit: int = 100
+        self, id_pedido: int, current_usuario: Cliente | Funcionario, offset: int = 0, limit: int = 10
     ) -> list[PagamentoResponse]:
         pedido = await self.pedido_repo.get_by_id(id_pedido)
         if not pedido:

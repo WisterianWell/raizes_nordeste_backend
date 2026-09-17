@@ -35,7 +35,7 @@ class PedidoRepository(BaseRepository[Pedido]):
         id_unidade: int | None = None,
         canal: str | None = None,
         offset: int = 0,
-        limit: int = 100,
+        limit: int = 10,
     ) -> list[Pedido]:
         query = select(Pedido)
         if id_cliente is not None:

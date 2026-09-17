@@ -1,7 +1,8 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import CanalPedido, CargoFunc, StatusPedido
+from app.enums import CanalPedido, StatusPedido
+from app.cargos import CARGOS_ADMIN
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.cardapio_repo import CardapioRepository
@@ -12,7 +13,6 @@ from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
 
 STATUS_FINALIZADOS = {StatusPedido.ENTREGUE.value, StatusPedido.CANCELADO.value}
 CANAIS_CLIENTE_OBRIGATORIO = {CanalPedido.APP.value, CanalPedido.WEB.value, CanalPedido.PICKUP.value}
-CARGOS_ADMIN = {CargoFunc.ADMIN.value, CargoFunc.GERENTE.value}
 ORDEM_STATUS = [
     StatusPedido.PENDENTE.value,
     StatusPedido.EM_PREPARO.value,
@@ -105,7 +105,7 @@ class PedidoService:
         id_unidade: int | None = None,
         canal: str | None = None,
         offset: int = 0,
-        limit: int = 100,
+        limit: int = 10,
     ) -> list[PedidoResponse]:
         if isinstance(current_usuario, Cliente):
             id_cliente = current_usuario.id_cliente

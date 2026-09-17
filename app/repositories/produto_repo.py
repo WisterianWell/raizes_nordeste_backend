@@ -14,7 +14,7 @@ class ProdutoRepository(BaseRepository[Produto]):
         return result.scalar_one_or_none()
 
     async def get_produtos(
-        self, categoria: str | None = None, offset: int = 0, limit: int = 100
+        self, categoria: str | None = None, offset: int = 0, limit: int = 10
     ) -> list[Produto]:
         query = select(Produto)
         if categoria is not None:

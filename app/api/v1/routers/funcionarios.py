@@ -5,7 +5,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from app.dependencies import requer_cargo
 from app.database import get_db_session
 from app.models.funcionario import Funcionario
-from app.enums import CargoFunc
+from app.cargos import CARGOS_ADMIN
 from app.schemas.funcionario_schemas import FuncionarioRequest, FuncionarioResponse, FuncionarioUpdate
 from app.services.funcionario_service import FuncionarioService
 
@@ -19,7 +19,7 @@ async def create_funcionario(
     data: FuncionarioRequest,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
     return await service.create_funcionario(data)
@@ -29,7 +29,7 @@ async def get_funcionario_by_id(
     id_funcionario: int,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
     return await service.get_funcionario_by_id(id_funcionario)
@@ -38,11 +38,11 @@ async def get_funcionario_by_id(
 async def get_funcionarios(
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
     id_unidade: int | None = None,
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[FuncionarioResponse]:
     return await service.get_funcionarios(id_unidade, offset, limit)
 
@@ -52,7 +52,7 @@ async def update_funcionario(
     data: FuncionarioUpdate,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
     return await service.update_funcionario(id_funcionario, data)
@@ -62,7 +62,7 @@ async def delete_funcionario(
     id_funcionario: int,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
 ):
     await service.delete_funcionario(id_funcionario)

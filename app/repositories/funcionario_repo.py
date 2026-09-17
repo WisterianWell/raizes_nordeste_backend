@@ -24,7 +24,7 @@ class FuncionarioRepository(BaseRepository[Funcionario]):
         return result.scalar_one_or_none()
 
     async def get_funcionarios(
-        self, id_unidade: int | None = None, offset: int = 0, limit: int = 100
+        self, id_unidade: int | None = None, offset: int = 0, limit: int = 10
     ) -> list[Funcionario]:
         query = select(Funcionario)
         if id_unidade is not None:

@@ -25,7 +25,7 @@ class ProdutoService:
         return ProdutoResponse.model_validate(produto)
 
     async def get_produtos(
-        self, categoria: str | None = None, offset: int = 0, limit: int = 100
+        self, categoria: str | None = None, offset: int = 0, limit: int = 10
     ) -> list[ProdutoResponse]:
         produtos = await self.repo.get_produtos(categoria, offset, limit)
         return [ProdutoResponse.model_validate(produto) for produto in produtos]

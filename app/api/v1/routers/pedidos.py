@@ -6,7 +6,8 @@ from app.dependencies import get_current_usuario, requer_cargo
 from app.database import get_db_session
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
-from app.enums import CanalPedido, CargoFunc
+from app.enums import CanalPedido
+from app.cargos import CARGOS_OPERACIONAIS
 from app.schemas.pagamento_schemas import PagamentoRequest, PagamentoResponse
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
 from app.services.pagamento_service import PagamentoService
@@ -36,7 +37,7 @@ async def get_pedidos(
     id_unidade: int | None = None,
     canal: CanalPedido | None = None,
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[PedidoResponse]:
     return await service.get_pedidos(
         current_usuario,
@@ -60,7 +61,7 @@ async def avancar_status_pedido(
     id_pedido: int,
     service: Annotated[PedidoService, Depends(get_pedido_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE, CargoFunc.ATENDENTE, CargoFunc.COZINHA)
+        requer_cargo(*CARGOS_OPERACIONAIS)
         )],
 ) -> PedidoResponse:
     return await service.avancar_status_pedido(id_pedido)
@@ -88,6 +89,6 @@ async def get_pagamentos_by_pedido(
     service: Annotated[PagamentoService, Depends(get_pagamento_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[PagamentoResponse]:
     return await service.get_pagamentos_by_pedido(id_pedido, current_usuario, offset, limit)

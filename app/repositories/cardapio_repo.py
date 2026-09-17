@@ -16,7 +16,7 @@ class CardapioRepository(BaseRepository[Cardapio]):
         return await self.get_by_id(id_produto, id_unidade)
 
     async def get_itens_by_unidade(
-        self, id_unidade: int, offset: int = 0, limit: int = 100, apenas_disponiveis: bool = False
+        self, id_unidade: int, offset: int = 0, limit: int = 10, apenas_disponiveis: bool = False
     ) -> list[Cardapio]:
         query = select(Cardapio).where(Cardapio.id_unidade == id_unidade)
         if apenas_disponiveis:

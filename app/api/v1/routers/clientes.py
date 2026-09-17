@@ -6,7 +6,7 @@ from app.dependencies import get_current_usuario, requer_cargo, requer_cliente_o
 from app.database import get_db_session
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
-from app.enums import CargoFunc
+from app.cargos import CARGOS_ADMIN, CARGOS_ATENDIMENTO
 from app.schemas.cliente_schemas import ClienteRequest, ClienteResponse, ClienteUpdate
 from app.services.cliente_service import ClienteService
 
@@ -27,7 +27,7 @@ async def get_cliente_by_id(
     id_cliente: int,
     service: Annotated[ClienteService, Depends(get_cliente_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ATENDENTE, CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ATENDIMENTO)
         )],
 ) -> ClienteResponse:
     return await service.get_cliente_by_id(id_cliente)
@@ -36,10 +36,10 @@ async def get_cliente_by_id(
 async def get_all_clientes(
     service: Annotated[ClienteService, Depends(get_cliente_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cargo(*CARGOS_ADMIN)
         )],
     offset: int = 0,
-    limit: int = 100,
+    limit: int = 10,
 ) -> list[ClienteResponse]:
     return await service.get_all_clientes(offset, limit)
 
@@ -57,7 +57,7 @@ async def delete_cliente(
     id_cliente: int,
     service: Annotated[ClienteService, Depends(get_cliente_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(
-        requer_cliente_ou_cargo(CargoFunc.ADMIN, CargoFunc.GERENTE)
+        requer_cliente_ou_cargo(*CARGOS_ADMIN)
         )],
 ):
     await service.delete_cliente(id_cliente)

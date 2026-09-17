@@ -23,7 +23,7 @@ class ClienteRepository(BaseRepository[Cliente]):
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_all_clientes(self, offset: int = 0, limit: int = 100) -> list[Cliente]:
+    async def get_all_clientes(self, offset: int = 0, limit: int = 10) -> list[Cliente]:
         query = (
             select(Cliente)
             .offset(offset)

@@ -13,7 +13,7 @@ class UnidadeRepository(BaseRepository[Unidade]):
         result = await self.session.execute(query)
         return result.scalar_one_or_none()
 
-    async def get_all_unidades(self, offset: int = 0, limit: int = 100) -> list[Unidade]:
+    async def get_all_unidades(self, offset: int = 0, limit: int = 10) -> list[Unidade]:
         query = (
             select(Unidade)
             .offset(offset)

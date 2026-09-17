@@ -51,7 +51,7 @@ class FuncionarioService:
         return FuncionarioResponse.model_validate(funcionario)
 
     async def get_funcionarios(
-        self, id_unidade: int | None = None, offset: int = 0, limit: int = 100
+        self, id_unidade: int | None = None, offset: int = 0, limit: int = 10
     ) -> list[FuncionarioResponse]:
         if id_unidade is not None and not await self.unidade_repo.get_by_id(id_unidade):
             raise HTTPException(
