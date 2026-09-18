@@ -1,13 +1,15 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import CanalPedido, StatusPagamento, StatusPedido
+from app.enums import CanalPedido, StatusPagamento, StatusPedido, TipoMovimentacao
 from app.cargos import CARGOS_ADMIN
 from app.gateways.pagamento import GatewayPagamentoMock
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.cardapio_repo import CardapioRepository
 from app.repositories.cliente_repo import ClienteRepository
+from app.repositories.estoque_repo import EstoqueRepository
+from app.repositories.mov_estoque_repo import MovEstoqueRepository
 from app.repositories.pagamento_repo import PagamentoRepository
 from app.repositories.pedido_repo import PedidoRepository
 from app.repositories.unidade_repo import UnidadeRepository
@@ -28,7 +30,9 @@ class PedidoService:
         self.cliente_repo = ClienteRepository(session)
         self.unidade_repo = UnidadeRepository(session)
         self.cardapio_repo = CardapioRepository(session)
+        self.estoque_repo = EstoqueRepository(session)
         self.pagamento_repo = PagamentoRepository(session)
+        self.mov_estoque_repo = MovEstoqueRepository(session)
         self.gateway = GatewayPagamentoMock()
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
@@ -67,7 +71,8 @@ class PedidoService:
                     status_code=status.HTTP_404_NOT_FOUND,
                     detail=f"{item.id_produto} não está disponível no cardápio dessa unidade."
                 )
-            if cardapio_item.estoque < item.quantidade:
+            estoque_item = await self.estoque_repo.get_item_estoque(item.id_produto, dados.id_unidade)
+            if not estoque_item or estoque_item.quantidade < item.quantidade:
                 raise HTTPException(
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"{item.id_produto} possui estoque insuficiente."
@@ -79,8 +84,8 @@ class PedidoService:
                 "quantidade": item.quantidade,
                 "preco_unitario": preco_unitario,
             })
-            await self.cardapio_repo.update_item_cardapio(
-                item.id_produto, dados.id_unidade, estoque=cardapio_item.estoque - item.quantidade
+            await self.estoque_repo.update_item_estoque(
+                item.id_produto, dados.id_unidade, quantidade=estoque_item.quantidade - item.quantidade
             )
         pedido = await self.repo.create_pedido(
             itens=itens_list,
@@ -90,6 +95,14 @@ class PedidoService:
             status=StatusPedido.PENDENTE.value,
             valor_total=valor_total,
         )
+        for item in itens_list:
+            await self.mov_estoque_repo.create(
+                id_produto=item["id_produto"],
+                id_unidade=dados.id_unidade,
+                id_pedido=pedido.id_pedido,
+                tipo=TipoMovimentacao.VENDA.value,
+                quantidade=-item["quantidade"],
+            )
         return PedidoResponse.model_validate(pedido)
 
     async def get_pedido_by_id(self, id_pedido: int, current_usuario: Cliente | Funcionario) -> PedidoResponse:
@@ -154,10 +167,17 @@ class PedidoService:
                 detail="Pedido já finalizado e não pode ser cancelado."
             )
         for item in pedido.itens:
-            cardapio_item = await self.cardapio_repo.get_item_cardapio(item.id_produto, pedido.id_unidade)
-            if cardapio_item:
-                await self.cardapio_repo.update_item_cardapio(
-                    item.id_produto, pedido.id_unidade, estoque=cardapio_item.estoque + item.quantidade
+            estoque_item = await self.estoque_repo.get_item_estoque(item.id_produto, pedido.id_unidade)
+            if estoque_item:
+                await self.estoque_repo.update_item_estoque(
+                    item.id_produto, pedido.id_unidade, quantidade=estoque_item.quantidade + item.quantidade
+                )
+                await self.mov_estoque_repo.create(
+                    id_produto=item.id_produto,
+                    id_unidade=pedido.id_unidade,
+                    id_pedido=pedido.id_pedido,
+                    tipo=TipoMovimentacao.CANCELAMENTO.value,
+                    quantidade=item.quantidade,
                 )
         pagamento_aprovado = next(
             (p for p in pedido.pagamentos if p.status == StatusPagamento.APROVADO.value), None

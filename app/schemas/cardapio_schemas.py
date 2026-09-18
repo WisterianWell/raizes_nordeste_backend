@@ -9,7 +9,6 @@ class CardapioRequest(BaseModel):
 
 class CardapioUpdate(BaseModel):
     preco: float | None = None
-    estoque: int | None = None
     disponivel: bool | None = None
 
 class CardapioResponse(BaseModel):
