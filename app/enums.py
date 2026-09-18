@@ -33,3 +33,4 @@ class FormaPagamento(str, Enum):
 class StatusPagamento(str, Enum):
     APROVADO = "APROVADO"
     RECUSADO = "RECUSADO"
+    ESTORNADO = "ESTORNADO"

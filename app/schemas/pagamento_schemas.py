@@ -6,7 +6,7 @@ from app.enums import FormaPagamento, StatusPagamento
 
 class PagamentoRequest(BaseModel):
     forma_pagamento: FormaPagamento
-    forcar_status: StatusPagamento | None = None
+    force_status: StatusPagamento | None = None
     model_config = {"use_enum_values": True}
 
 class PagamentoResponse(BaseModel):

@@ -1,12 +1,14 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import CanalPedido, StatusPedido
+from app.enums import CanalPedido, StatusPagamento, StatusPedido
 from app.cargos import CARGOS_ADMIN
+from app.gateways.pagamento import GatewayPagamentoMock
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.cardapio_repo import CardapioRepository
 from app.repositories.cliente_repo import ClienteRepository
+from app.repositories.pagamento_repo import PagamentoRepository
 from app.repositories.pedido_repo import PedidoRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
@@ -26,6 +28,8 @@ class PedidoService:
         self.cliente_repo = ClienteRepository(session)
         self.unidade_repo = UnidadeRepository(session)
         self.cardapio_repo = CardapioRepository(session)
+        self.pagamento_repo = PagamentoRepository(session)
+        self.gateway = GatewayPagamentoMock()
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
         if isinstance(current_usuario, Cliente) and current_usuario.id_cliente != id_cliente:
@@ -155,5 +159,17 @@ class PedidoService:
                 await self.cardapio_repo.update_item_cardapio(
                     item.id_produto, pedido.id_unidade, estoque=cardapio_item.estoque + item.quantidade
                 )
+        pagamento_aprovado = next(
+            (p for p in pedido.pagamentos if p.status == StatusPagamento.APROVADO.value), None
+        )
+        if pagamento_aprovado:
+            payload = self.gateway.estornar_pagamento(pagamento_aprovado.id_transacao, float(pagamento_aprovado.valor))
+            await self.pagamento_repo.create(
+                id_pedido=id_pedido,
+                forma_pagamento=pagamento_aprovado.forma_pagamento,
+                valor=pagamento_aprovado.valor,
+                status=payload["status"],
+                id_transacao=payload["id_transacao"],
+            )
         pedido = await self.repo.update_status_pedido(id_pedido, StatusPedido.CANCELADO.value)
         return PedidoResponse.model_validate(pedido)

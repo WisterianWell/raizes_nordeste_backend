@@ -23,3 +23,12 @@ class GatewayPagamentoMock:
             "valor_processado": solicitacao["valor"],
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
+
+    def estornar_pagamento(self, id_transacao_orig: str, valor: float) -> dict:
+        return {
+            "status": StatusPagamento.ESTORNADO.value,
+            "id_transacao": f"{uuid.uuid4()}",
+            "estorno_de": id_transacao_orig,
+            "valor_processado": valor,
+            "created_at": datetime.now(timezone.utc).isoformat(),
+        }
