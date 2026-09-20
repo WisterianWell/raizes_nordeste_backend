@@ -27,6 +27,18 @@ async def aceitar_termos_fidelizacao(
         )
     return await service.aceitar_termos(current_usuario.id_cliente)
 
+@router.post("/termos/revogar")
+async def revogar_termos_fidelizacao(
+    service: Annotated[FidelizacaoService, Depends(get_fidelizacao_service)],
+    current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
+) -> FidelizacaoResponse:
+    if not isinstance(current_usuario, Cliente):
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Apenas clientes podem revogar os termos de fidelização."
+        )
+    return await service.revogar_termos(current_usuario.id_cliente)
+
 @router.get("/{id_cliente}")
 async def get_fidelizacao(
     id_cliente: int,

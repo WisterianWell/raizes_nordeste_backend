@@ -47,6 +47,19 @@ class FidelizacaoService:
         fidelizacao = await self._get_or_create_fidelizacao(id_cliente)
         return self._build_response(cliente, fidelizacao)
 
+    async def revogar_termos(self, id_cliente: int) -> FidelizacaoResponse:
+        cliente = await self.cliente_repo.get_by_id(id_cliente)
+        if not cliente:
+            raise HTTPException(
+                status_code=status.HTTP_404_NOT_FOUND,
+                detail="Cliente não encontrado."
+            )
+        cliente = await self.cliente_repo.update(
+            id_cliente, consent=False, consent_at=None
+        )
+        fidelizacao = await self._get_or_create_fidelizacao(id_cliente)
+        return self._build_response(cliente, fidelizacao)
+
     async def get_fidelizacao(self, id_cliente: int) -> FidelizacaoResponse:
         cliente = await self.cliente_repo.get_by_id(id_cliente)
         if not cliente:
