@@ -17,6 +17,7 @@ class CardapioResponse(BaseModel):
     nome: str
     categoria: str
     preco: float
+    preco_promo: float | None
     estoque: int
     disponivel: bool
     model_config = {"from_attributes": True}
@@ -27,5 +28,6 @@ class CardapioPublicoResponse(BaseModel):
     nome: str
     categoria: str
     preco: float
+    preco_promo: float | None
     disponivel: bool
     model_config = {"from_attributes": True}

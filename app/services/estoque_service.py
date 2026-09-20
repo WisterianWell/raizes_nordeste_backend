@@ -2,14 +2,15 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import TipoMovEstoque
-from app.models.cardapio import Cardapio
 from app.models.estoque import Estoque
+from app.models.item_cardapio import ItemCardapio
 from app.repositories.cardapio_repo import CardapioRepository
 from app.repositories.estoque_repo import EstoqueRepository
 from app.repositories.mov_estoque_repo import MovEstoqueRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.cardapio_schemas import CardapioResponse
 from app.schemas.mov_estoque_schemas import MovEstoqueRequest, MovEstoqueResponse
+from app.services.promocao_service import PromocaoService
 
 class EstoqueService:
     def __init__(self, session: AsyncSession):
@@ -17,27 +18,33 @@ class EstoqueService:
         self.cardapio_repo = CardapioRepository(session)
         self.mov_estoque_repo = MovEstoqueRepository(session)
         self.unidade_repo = UnidadeRepository(session)
+        self.promocao_service = PromocaoService(session)
 
-    def _build_response(self, cardapio: Cardapio, estoque: Estoque) -> CardapioResponse:
-        return CardapioResponse(
-            id_produto=cardapio.id_produto,
-            id_unidade=cardapio.id_unidade,
-            nome=cardapio.nome,
-            categoria=cardapio.categoria,
-            preco=float(cardapio.preco),
-            estoque=estoque.quantidade,
-            disponivel=cardapio.disponivel,
+    async def _build_response(self, item_cardapio: ItemCardapio, estoque: Estoque) -> CardapioResponse:
+        preco = float(item_cardapio.preco)
+        preco_com_desconto = await self.promocao_service.calc_preco_desconto(
+            item_cardapio.id_produto, item_cardapio.id_unidade, preco
         )
-    
-    async def _search_item(self, id_produto: int, id_unidade: int) -> tuple[Cardapio, Estoque]:
-        cardapio = await self.cardapio_repo.get_item_cardapio(id_produto, id_unidade)
+        return CardapioResponse(
+            id_produto=item_cardapio.id_produto,
+            id_unidade=item_cardapio.id_unidade,
+            nome=item_cardapio.nome,
+            categoria=item_cardapio.categoria,
+            preco=preco,
+            preco_promo=preco_com_desconto if preco_com_desconto < preco else None,
+            estoque=estoque.quantidade,
+            disponivel=item_cardapio.disponivel,
+        )
+
+    async def _search_item(self, id_produto: int, id_unidade: int) -> tuple[ItemCardapio, Estoque]:
+        item_cardapio = await self.cardapio_repo.get_item_cardapio(id_produto, id_unidade)
         estoque = await self.repo.get_item_estoque(id_produto, id_unidade)
-        if not cardapio or not estoque:
+        if not item_cardapio or not estoque:
             raise HTTPException(
                 status_code=status.HTTP_404_NOT_FOUND,
                 detail="Produto não encontrado nessa unidade."
             )
-        return cardapio, estoque
+        return item_cardapio, estoque
 
     async def get_estoque_by_unidade(
         self, id_unidade: int, offset: int = 0, limit: int = 10
@@ -45,7 +52,7 @@ class EstoqueService:
         itens = await self.cardapio_repo.get_itens_by_unidade(id_unidade, offset, limit, apenas_disponiveis=False)
         estoques = {e.id_produto: e for e in await self.repo.get_by_unidade(id_unidade)}
         return [
-            self._build_response(item, estoques[item.id_produto])
+            await self._build_response(item, estoques[item.id_produto])
             for item in itens
             if item.id_produto in estoques
         ]

@@ -45,3 +45,7 @@ class TipoMovPontos(str, Enum):
     GANHO = "GANHO"
     RESGATE = "RESGATE"
     ESTORNO = "ESTORNO"
+
+class TipoDesconto(str, Enum):
+    PERCENTUAL = "PERCENTUAL"
+    VALOR_FIXO = "VALOR_FIXO"

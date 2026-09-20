@@ -1,31 +1,31 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.cardapio import Cardapio
+from app.models.item_cardapio import ItemCardapio
 from app.repositories.base import BaseRepository
 
-class CardapioRepository(BaseRepository[Cardapio]):
+class CardapioRepository(BaseRepository[ItemCardapio]):
     def __init__(self, session: AsyncSession):
-        super().__init__(Cardapio, session)
+        super().__init__(ItemCardapio, session)
 
-    async def create_item_cardapio(self, **kwargs) -> Cardapio:
+    async def create_item_cardapio(self, **kwargs) -> ItemCardapio:
         instance = await self.create(**kwargs)
         return await self.get_item_cardapio(instance.id_produto, instance.id_unidade)
 
-    async def get_item_cardapio(self, id_produto: int, id_unidade: int) -> Cardapio | None:
+    async def get_item_cardapio(self, id_produto: int, id_unidade: int) -> ItemCardapio | None:
         return await self.get_by_id(id_produto, id_unidade)
 
     async def get_itens_by_unidade(
         self, id_unidade: int, offset: int = 0, limit: int = 10, apenas_disponiveis: bool = False
-    ) -> list[Cardapio]:
-        query = select(Cardapio).where(Cardapio.id_unidade == id_unidade)
+    ) -> list[ItemCardapio]:
+        query = select(ItemCardapio).where(ItemCardapio.id_unidade == id_unidade)
         if apenas_disponiveis:
-            query = query.where(Cardapio.disponivel.is_(True))
+            query = query.where(ItemCardapio.disponivel.is_(True))
         query = query.offset(offset).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def update_item_cardapio(self, id_produto: int, id_unidade: int, **kwargs) -> Cardapio | None:
+    async def update_item_cardapio(self, id_produto: int, id_unidade: int, **kwargs) -> ItemCardapio | None:
         instance = await self.update(id_produto, id_unidade, **kwargs)
         if not instance:
             return None

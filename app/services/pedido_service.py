@@ -15,6 +15,7 @@ from app.repositories.pedido_repo import PedidoRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
 from app.services.fidelizacao_service import FidelizacaoService
+from app.services.promocao_service import PromocaoService
 
 STATUS_FINALIZADOS = {StatusPedido.ENTREGUE.value, StatusPedido.CANCELADO.value}
 CANAIS_CLIENTE_OBRIGATORIO = {CanalPedido.APP.value, CanalPedido.WEB.value, CanalPedido.PICKUP.value}
@@ -35,6 +36,7 @@ class PedidoService:
         self.pagamento_repo = PagamentoRepository(session)
         self.mov_estoque_repo = MovEstoqueRepository(session)
         self.fidelizacao_service = FidelizacaoService(session)
+        self.promocao_service = PromocaoService(session)
         self.gateway = GatewayPagamentoMock()
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
@@ -79,7 +81,9 @@ class PedidoService:
                     status_code=status.HTTP_409_CONFLICT,
                     detail=f"{item.id_produto} possui estoque insuficiente."
                 )
-            preco_unitario = float(cardapio_item.preco)
+            preco_unitario = await self.promocao_service.calc_preco_desconto(
+                item.id_produto, dados.id_unidade, float(cardapio_item.preco)
+            )
             valor_total += preco_unitario * item.quantidade
             itens_list.append({
                 "id_produto": item.id_produto,
