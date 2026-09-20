@@ -8,18 +8,13 @@ from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.enums import CanalPedido
 from app.cargos import CARGOS_OPERACIONAIS
-from app.schemas.pagamento_schemas import PagamentoRequest, PagamentoResponse
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
-from app.services.pagamento_service import PagamentoService
 from app.services.pedido_service import PedidoService
 
 router = APIRouter()
 
 def get_pedido_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> PedidoService:
     return PedidoService(db)
-
-def get_pagamento_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> PagamentoService:
-    return PagamentoService(db)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_pedido(
@@ -73,22 +68,3 @@ async def cancelar_pedido(
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
 ) -> PedidoResponse:
     return await service.cancelar_pedido(id_pedido, current_usuario)
-
-@router.post("/{id_pedido}/pagar", status_code=status.HTTP_201_CREATED)
-async def pagar_pedido(
-    id_pedido: int,
-    data: PagamentoRequest,
-    service: Annotated[PagamentoService, Depends(get_pagamento_service)],
-    current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
-) -> PagamentoResponse:
-    return await service.pagar_pedido(id_pedido, data, current_usuario)
-
-@router.get("/{id_pedido}/pagamentos")
-async def get_pagamentos_by_pedido(
-    id_pedido: int,
-    service: Annotated[PagamentoService, Depends(get_pagamento_service)],
-    current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
-    offset: int = 0,
-    limit: int = 10,
-) -> list[PagamentoResponse]:
-    return await service.get_pagamentos_by_pedido(id_pedido, current_usuario, offset, limit)
