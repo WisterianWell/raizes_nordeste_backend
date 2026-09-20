@@ -30,6 +30,7 @@ class PedidoResponse(BaseModel):
     id_unidade: int
     canal: str
     status: str
+    status_pagamento: str | None
     valor_total: float
     created_at: datetime
     itens: list[ItemPedidoResponse]

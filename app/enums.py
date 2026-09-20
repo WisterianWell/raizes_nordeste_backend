@@ -35,8 +35,13 @@ class StatusPagamento(str, Enum):
     RECUSADO = "RECUSADO"
     ESTORNADO = "ESTORNADO"
 
-class TipoMovimentacao(str, Enum):
+class TipoMovEstoque(str, Enum):
     VENDA = "VENDA"
     CANCELAMENTO = "CANCELAMENTO"
     ENTRADA = "ENTRADA"
     SAIDA = "SAIDA"
+
+class TipoMovPontos(str, Enum):
+    GANHO = "GANHO"
+    RESGATE = "RESGATE"
+    ESTORNO = "ESTORNO"

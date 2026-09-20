@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import CanalPedido, StatusPagamento, StatusPedido, TipoMovimentacao
+from app.enums import CanalPedido, StatusPagamento, StatusPedido, TipoMovEstoque
 from app.cargos import CARGOS_ADMIN
 from app.gateways.pagamento import GatewayPagamentoMock
 from app.models.cliente import Cliente
@@ -14,6 +14,7 @@ from app.repositories.pagamento_repo import PagamentoRepository
 from app.repositories.pedido_repo import PedidoRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
+from app.services.fidelizacao_service import FidelizacaoService
 
 STATUS_FINALIZADOS = {StatusPedido.ENTREGUE.value, StatusPedido.CANCELADO.value}
 CANAIS_CLIENTE_OBRIGATORIO = {CanalPedido.APP.value, CanalPedido.WEB.value, CanalPedido.PICKUP.value}
@@ -33,6 +34,7 @@ class PedidoService:
         self.estoque_repo = EstoqueRepository(session)
         self.pagamento_repo = PagamentoRepository(session)
         self.mov_estoque_repo = MovEstoqueRepository(session)
+        self.fidelizacao_service = FidelizacaoService(session)
         self.gateway = GatewayPagamentoMock()
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
@@ -100,7 +102,7 @@ class PedidoService:
                 id_produto=item["id_produto"],
                 id_unidade=dados.id_unidade,
                 id_pedido=pedido.id_pedido,
-                tipo=TipoMovimentacao.VENDA.value,
+                tipo=TipoMovEstoque.VENDA.value,
                 quantidade=-item["quantidade"],
             )
         return PedidoResponse.model_validate(pedido)
@@ -176,7 +178,7 @@ class PedidoService:
                     id_produto=item.id_produto,
                     id_unidade=pedido.id_unidade,
                     id_pedido=pedido.id_pedido,
-                    tipo=TipoMovimentacao.CANCELAMENTO.value,
+                    tipo=TipoMovEstoque.CANCELAMENTO.value,
                     quantidade=item.quantidade,
                 )
         pagamento_aprovado = next(
@@ -187,9 +189,14 @@ class PedidoService:
             await self.pagamento_repo.create(
                 id_pedido=id_pedido,
                 forma_pagamento=pagamento_aprovado.forma_pagamento,
+                valor_original=pagamento_aprovado.valor_original,
                 valor=pagamento_aprovado.valor,
                 status=payload["status"],
                 id_transacao=payload["id_transacao"],
             )
+            await self.repo.update(id_pedido, status_pagamento=payload["status"])
+            if pedido.id_cliente is not None:
+                await self.fidelizacao_service.estornar_pontos(pedido.id_cliente, id_pedido)
+                await self.fidelizacao_service.estornar_resgate(pedido.id_cliente, id_pedido)
         pedido = await self.repo.update_status_pedido(id_pedido, StatusPedido.CANCELADO.value)
         return PedidoResponse.model_validate(pedido)

@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import TipoMovimentacao
+from app.enums import TipoMovEstoque
 from app.models.cardapio import Cardapio
 from app.models.estoque import Estoque
 from app.repositories.cardapio_repo import CardapioRepository
@@ -60,7 +60,7 @@ class EstoqueService:
         movimentacao = await self.mov_estoque_repo.create(
             id_produto=id_produto,
             id_unidade=id_unidade,
-            tipo=TipoMovimentacao.ENTRADA.value,
+            tipo=TipoMovEstoque.ENTRADA.value,
             quantidade=dados.quantidade,
         )
         return MovEstoqueResponse.model_validate(movimentacao)
@@ -80,7 +80,7 @@ class EstoqueService:
         movimentacao = await self.mov_estoque_repo.create(
             id_produto=id_produto,
             id_unidade=id_unidade,
-            tipo=TipoMovimentacao.SAIDA.value,
+            tipo=TipoMovEstoque.SAIDA.value,
             quantidade=-dados.quantidade,
         )
         return MovEstoqueResponse.model_validate(movimentacao)

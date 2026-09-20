@@ -8,11 +8,13 @@ from app.repositories.pagamento_repo import PagamentoRepository
 from app.repositories.pedido_repo import PedidoRepository
 from app.schemas.pagamento_schemas import PagamentoRequest, PagamentoResponse
 from app.gateways.pagamento import GatewayPagamentoMock
+from app.services.fidelizacao_service import FidelizacaoService
 
 class PagamentoService:
     def __init__(self, session: AsyncSession):
         self.repo = PagamentoRepository(session)
         self.pedido_repo = PedidoRepository(session)
+        self.fidelizacao_service = FidelizacaoService(session)
         self.gateway = GatewayPagamentoMock()
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
@@ -43,16 +45,35 @@ class PagamentoService:
                 status_code=status.HTTP_409_CONFLICT,
                 detail="Pedido já está pago."
             )
+        valor_original = float(pedido.valor_total)
+        valor = valor_original
+        pontos_resgatados = dados.pontos_resgatados or 0
+        if pontos_resgatados:
+            if pedido.id_cliente is None:
+                raise HTTPException(
+                    status_code=status.HTTP_400_BAD_REQUEST,
+                    detail="Pedido sem cliente associado não pode resgatar pontos."
+                )
+            desconto = await self.fidelizacao_service.calcular_desconto(pedido.id_cliente, pontos_resgatados)
+            valor = max(0.0, valor - desconto)
+
         payload = self.gateway.processar_pagamento(
-            id_pedido, float(pedido.valor_total), dados.forma_pagamento, force_status=dados.force_status
+            id_pedido, valor, dados.forma_pagamento, force_status=dados.force_status
         )
         pagamento = await self.repo.create(
             id_pedido=id_pedido,
             forma_pagamento=dados.forma_pagamento,
-            valor=pedido.valor_total,
+            valor_original=valor_original,
+            valor=valor,
             status=payload["status"],
             id_transacao=payload["id_transacao"],
         )
+        await self.pedido_repo.update(id_pedido, status_pagamento=pagamento.status)
+        if pagamento.status == StatusPagamento.APROVADO.value:
+            if pontos_resgatados:
+                await self.fidelizacao_service.resgatar_pontos(pedido.id_cliente, id_pedido, pontos_resgatados)
+            if pedido.id_cliente is not None:
+                await self.fidelizacao_service.ganhar_pontos(pedido.id_cliente, id_pedido, valor)
         return PagamentoResponse.model_validate(pagamento)
 
     async def get_pagamentos_by_pedido(

@@ -15,6 +15,7 @@ class Pedido(Base):
     id_unidade: Mapped[int] = mapped_column(ForeignKey("unidades.id_unidade"), index=True)
     canal: Mapped[str] = mapped_column(String, index=True)
     status: Mapped[str] = mapped_column(String, default=StatusPedido.PENDENTE.value, index=True)
+    status_pagamento: Mapped[str | None] = mapped_column(String, index=True)
     valor_total: Mapped[float] = mapped_column(Numeric(10, 2), default=0)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
     itens: Mapped[list[ItemPedido]] = relationship(lazy="selectin", cascade="all, delete-orphan")
