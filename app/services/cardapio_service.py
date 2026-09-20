@@ -1,7 +1,7 @@
 from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.models.estoque import Estoque
+from app.models.item_estoque import ItemEstoque
 from app.models.item_cardapio import ItemCardapio
 from app.repositories.cardapio_repo import CardapioRepository
 from app.repositories.estoque_repo import EstoqueRepository
@@ -29,7 +29,7 @@ class CardapioService:
         )
         return preco_com_desconto if preco_com_desconto < preco else None
 
-    async def _build_response(self, item_cardapio: ItemCardapio, estoque: Estoque) -> CardapioResponse:
+    async def _build_response(self, item_cardapio: ItemCardapio, estoque: ItemEstoque) -> CardapioResponse:
         preco = float(item_cardapio.preco)
         return CardapioResponse(
             id_produto=item_cardapio.id_produto,

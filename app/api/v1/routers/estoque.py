@@ -27,29 +27,25 @@ async def get_estoque_by_unidade(
 ) -> list[CardapioResponse]:
     return await service.get_estoque_by_unidade(id_unidade, offset, limit)
 
-@router.post("/{id_produto}/{id_unidade}/entrada")
-async def dar_entrada_estoque(
-    id_produto: int,
-    id_unidade: int,
+@router.post("/entrada")
+async def criar_entrada_estoque(
     data: MovEstoqueRequest,
     service: Annotated[EstoqueService, Depends(get_estoque_service)],
     current_usuario: Annotated[Funcionario, Depends(
         requer_cargo(*CARGOS_ADMIN)
         )],
-) -> MovEstoqueResponse:
-    return await service.dar_entrada(id_produto, id_unidade, data)
+) -> list[MovEstoqueResponse]:
+    return await service.dar_entrada(data)
 
-@router.post("/{id_produto}/{id_unidade}/saida")
-async def dar_saida_estoque(
-    id_produto: int,
-    id_unidade: int,
+@router.post("/saida")
+async def criar_saida_estoque(
     data: MovEstoqueRequest,
     service: Annotated[EstoqueService, Depends(get_estoque_service)],
     current_usuario: Annotated[Funcionario, Depends(
         requer_cargo(*CARGOS_ADMIN)
         )],
-) -> MovEstoqueResponse:
-    return await service.dar_saida(id_produto, id_unidade, data)
+) -> list[MovEstoqueResponse]:
+    return await service.dar_saida(data)
 
 @router.get("/{id_unidade}/movimentacoes")
 async def get_movimentacoes_estoque(

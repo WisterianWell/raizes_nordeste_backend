@@ -2,8 +2,8 @@ from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import TipoMovEstoque
-from app.models.estoque import Estoque
 from app.models.item_cardapio import ItemCardapio
+from app.models.item_estoque import ItemEstoque
 from app.repositories.cardapio_repo import CardapioRepository
 from app.repositories.estoque_repo import EstoqueRepository
 from app.repositories.mov_estoque_repo import MovEstoqueRepository
@@ -20,7 +20,7 @@ class EstoqueService:
         self.unidade_repo = UnidadeRepository(session)
         self.promocao_service = PromocaoService(session)
 
-    async def _build_response(self, item_cardapio: ItemCardapio, estoque: Estoque) -> CardapioResponse:
+    async def _build_response(self, item_cardapio: ItemCardapio, estoque: ItemEstoque) -> CardapioResponse:
         preco = float(item_cardapio.preco)
         preco_com_desconto = await self.promocao_service.calc_preco_desconto(
             item_cardapio.id_produto, item_cardapio.id_unidade, preco
@@ -36,7 +36,7 @@ class EstoqueService:
             disponivel=item_cardapio.disponivel,
         )
 
-    async def _search_item(self, id_produto: int, id_unidade: int) -> tuple[ItemCardapio, Estoque]:
+    async def _search_item(self, id_produto: int, id_unidade: int) -> tuple[ItemCardapio, ItemEstoque]:
         item_cardapio = await self.cardapio_repo.get_item_cardapio(id_produto, id_unidade)
         estoque = await self.repo.get_item_estoque(id_produto, id_unidade)
         if not item_cardapio or not estoque:
@@ -57,40 +57,42 @@ class EstoqueService:
             if item.id_produto in estoques
         ]
 
-    async def dar_entrada(
-        self, id_produto: int, id_unidade: int, dados: MovEstoqueRequest
-    ) -> MovEstoqueResponse:
-        _, estoque_atual = await self._search_item(id_produto, id_unidade)
-        await self.repo.update_item_estoque(
-            id_produto, id_unidade, quantidade=estoque_atual.quantidade + dados.quantidade
-        )
-        movimentacao = await self.mov_estoque_repo.create(
-            id_produto=id_produto,
-            id_unidade=id_unidade,
-            tipo=TipoMovEstoque.ENTRADA.value,
-            quantidade=dados.quantidade,
-        )
-        return MovEstoqueResponse.model_validate(movimentacao)
-
-    async def dar_saida(
-        self, id_produto: int, id_unidade: int, dados: MovEstoqueRequest
-    ) -> MovEstoqueResponse:
-        _, estoque_atual = await self._search_item(id_produto, id_unidade)
-        if dados.quantidade > estoque_atual.quantidade:
-            raise HTTPException(
-                status_code=status.HTTP_409_CONFLICT,
-                detail="Estoque insuficiente para essa saída."
+    async def criar_entrada(self, dados: MovEstoqueRequest) -> list[MovEstoqueResponse]:
+        resultados = []
+        for item in dados.itens:
+            _, estoque_atual = await self._search_item(item.id_produto, item.id_unidade)
+            await self.repo.update_item_estoque(
+                item.id_produto, item.id_unidade, quantidade=estoque_atual.quantidade + item.quantidade
             )
-        await self.repo.update_item_estoque(
-            id_produto, id_unidade, quantidade=estoque_atual.quantidade - dados.quantidade
-        )
-        movimentacao = await self.mov_estoque_repo.create(
-            id_produto=id_produto,
-            id_unidade=id_unidade,
-            tipo=TipoMovEstoque.SAIDA.value,
-            quantidade=-dados.quantidade,
-        )
-        return MovEstoqueResponse.model_validate(movimentacao)
+            movimentacao = await self.mov_estoque_repo.create(
+                id_produto=item.id_produto,
+                id_unidade=item.id_unidade,
+                tipo=TipoMovEstoque.ENTRADA.value,
+                quantidade=item.quantidade,
+            )
+            resultados.append(MovEstoqueResponse.model_validate(movimentacao))
+        return resultados
+
+    async def criar_saida(self, dados: MovEstoqueRequest) -> list[MovEstoqueResponse]:
+        resultados = []
+        for item in dados.itens:
+            _, estoque_atual = await self._search_item(item.id_produto, item.id_unidade)
+            if item.quantidade > estoque_atual.quantidade:
+                raise HTTPException(
+                    status_code=status.HTTP_409_CONFLICT,
+                    detail=f"Estoque insuficiente de {item.id_produto} na unidade {item.id_unidade}."
+                )
+            await self.repo.update_item_estoque(
+                item.id_produto, item.id_unidade, quantidade=estoque_atual.quantidade - item.quantidade
+            )
+            movimentacao = await self.mov_estoque_repo.create(
+                id_produto=item.id_produto,
+                id_unidade=item.id_unidade,
+                tipo=TipoMovEstoque.SAIDA.value,
+                quantidade=-item.quantidade,
+            )
+            resultados.append(MovEstoqueResponse.model_validate(movimentacao))
+        return resultados
 
     async def get_movimentacoes(
         self, id_unidade: int, id_produto: int | None = None, offset: int = 0, limit: int = 10

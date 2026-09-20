@@ -2,8 +2,13 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-class MovEstoqueRequest(BaseModel):
+class ItemMovEstoqueRequest(BaseModel):
+    id_produto: int
+    id_unidade: int
     quantidade: int = Field(gt=0)
+
+class MovEstoqueRequest(BaseModel):
+    itens: list[ItemMovEstoqueRequest] = Field(min_length=1)
 
 class MovEstoqueResponse(BaseModel):
     id_movimentacao: int
