@@ -5,7 +5,7 @@ from fastapi.security import OAuth2PasswordRequestForm
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import get_db_session
-from app.schemas.auth_schemas import TokenResponse
+from app.schemas.auth_schemas import RefreshRequest, TokenResponse
 from app.services.auth_service import AuthService
 
 router = APIRouter()
@@ -19,3 +19,10 @@ async def login(
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> TokenResponse:
     return await service.login(email=form_data.username, senha=form_data.password)
+
+@router.post("/refresh")
+async def refresh(
+    data: RefreshRequest,
+    service: Annotated[AuthService, Depends(get_auth_service)],
+) -> TokenResponse:
+    return await service.refresh(data.refresh_token)

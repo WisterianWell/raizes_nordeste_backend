@@ -22,6 +22,7 @@ class Settings(BaseSettings):
     jwt_secret_key: str
     jwt_algorithm: str = "HS256"
     jwt_expiration_minutes: int = 30
+    jwt_refresh_expiration_days: int = 7
 
     # Admin padráo
     admin_email: str | None = None

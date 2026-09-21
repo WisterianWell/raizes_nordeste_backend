@@ -1,4 +1,6 @@
+import jwt
 from fastapi import HTTPException, status
+from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.cliente import Cliente
@@ -6,8 +8,17 @@ from app.models.funcionario import Funcionario
 from app.repositories.cliente_repo import ClienteRepository
 from app.repositories.funcionario_repo import FuncionarioRepository
 from app.enums import TipoUsuario
-from app.core.security import verify_senha, create_token_acesso, DUMMY_HASH
+from app.core.config import get_settings
+from app.core.security import verify_senha, create_token_acesso, create_token_refresh, DUMMY_HASH
 from app.schemas.auth_schemas import TokenResponse
+
+settings = get_settings()
+
+credentials_exception = HTTPException(
+    status_code=status.HTTP_401_UNAUTHORIZED,
+    detail="Refresh token inválido ou expirado.",
+    headers={"WWW-Authenticate": "Bearer"}
+)
 
 class AuthService:
     def __init__(self, session: AsyncSession):
@@ -32,17 +43,39 @@ class AuthService:
             return None
         return funcionario
 
+    def _build_tokens(self, sub: str, role: str) -> TokenResponse:
+        access_token = create_token_acesso({"sub": sub, "role": role})
+        refresh_token = create_token_refresh({"sub": sub, "role": role})
+        return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+
     async def login(self, email: str, senha: str) -> TokenResponse:
         cliente = await self.authenticate_cliente(email, senha)
         if cliente:
-            access_token = create_token_acesso({"sub": str(cliente.id_cliente), "role": TipoUsuario.CLIENTE.value})
-            return TokenResponse(access_token=access_token, token_type="bearer")
+            return self._build_tokens(str(cliente.id_cliente), TipoUsuario.CLIENTE.value)
         funcionario = await self.authenticate_funcionario(email, senha)
         if funcionario:
-            access_token = create_token_acesso({"sub": str(funcionario.id_funcionario), "role": TipoUsuario.FUNCIONARIO.value})
-            return TokenResponse(access_token=access_token, token_type="bearer")
+            return self._build_tokens(str(funcionario.id_funcionario), TipoUsuario.FUNCIONARIO.value)
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Email ou senha incorretos.",
             headers={"WWW-Authenticate": "Bearer"}
         )
+
+    async def refresh(self, refresh_token: str) -> TokenResponse:
+        try:
+            payload = jwt.decode(refresh_token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        except InvalidTokenError:
+            raise credentials_exception
+        if payload.get("type") != "refresh":
+            raise credentials_exception
+        sub = payload.get("sub")
+        role = payload.get("role")
+        if sub is None or role is None:
+            raise credentials_exception
+        if role == TipoUsuario.FUNCIONARIO.value:
+            usuario = await self.funcionario_repo.get_by_id(int(sub))
+        else:
+            usuario = await self.cliente_repo.get_by_id(int(sub))
+        if usuario is None:
+            raise credentials_exception
+        return self._build_tokens(sub, role)

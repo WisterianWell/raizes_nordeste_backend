@@ -30,6 +30,8 @@ async def get_current_usuario(
 ) -> Cliente | Funcionario:
     try:
         payload = jwt.decode(token, settings.jwt_secret_key, algorithms=[settings.jwt_algorithm])
+        if payload.get("type") != "access":
+            raise credentials_exception
         sub = payload.get("sub")
         role = payload.get("role")
         if sub is None or role is None:
