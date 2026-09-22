@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import TipoMovEstoque
@@ -10,6 +10,9 @@ from app.repositories.mov_estoque_repo import MovEstoqueRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.cardapio_schemas import CardapioResponse
 from app.schemas.mov_estoque_schemas import MovEstoqueRequest, MovEstoqueResponse
+from app.exceptions import common_errors
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.services.promocao_service import PromocaoService
 
 class EstoqueService:
@@ -31,7 +34,7 @@ class EstoqueService:
             nome=item_cardapio.nome,
             categoria=item_cardapio.categoria,
             preco=preco,
-            preco_promo=preco_com_desconto if preco_com_desconto < preco else None,
+            preco_promo=round(preco_com_desconto, 2) if preco_com_desconto < preco else None,
             estoque=estoque.quantidade,
             disponivel=item_cardapio.disponivel,
         )
@@ -40,10 +43,7 @@ class EstoqueService:
         item_cardapio = await self.cardapio_repo.get_item_cardapio(id_produto, id_unidade)
         estoque = await self.repo.get_item_estoque(id_produto, id_unidade)
         if not item_cardapio or not estoque:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado nessa unidade."
-            )
+            raise common_errors.item_cardapio_nao_encontrado()
         return item_cardapio, estoque
 
     async def get_estoque_by_unidade(
@@ -75,12 +75,17 @@ class EstoqueService:
 
     async def criar_saida(self, dados: MovEstoqueRequest) -> list[MovEstoqueResponse]:
         resultados = []
-        for item in dados.itens:
+        for index, item in enumerate(dados.itens):
             _, estoque_atual = await self._search_item(item.id_produto, item.id_unidade)
             if item.quantidade > estoque_atual.quantidade:
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"Estoque insuficiente de {item.id_produto} na unidade {item.id_unidade}."
+                    error_code=ErrorCodes.ESTOQUE_INSUFICIENTE,
+                    message="Não há quantidade suficiente para um ou mais itens.",
+                    details=[{
+                        "field": f"itens[{index}].quantidade",
+                        "issue": f"Quantidade disponível: {estoque_atual.quantidade}",
+                    }],
                 )
             await self.repo.update_item_estoque(
                 item.id_produto, item.id_unidade, quantidade=estoque_atual.quantidade - item.quantidade
@@ -99,14 +104,8 @@ class EstoqueService:
     ) -> list[MovEstoqueResponse]:
         if id_produto is not None:
             if not await self.repo.get_item_estoque(id_produto, id_unidade):
-                raise HTTPException(
-                    status_code=status.HTTP_404_NOT_FOUND,
-                    detail="Produto não encontrado nessa unidade."
-                )
+                raise common_errors.item_cardapio_nao_encontrado()
         elif not await self.unidade_repo.get_by_id(id_unidade):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()
         movimentacoes = await self.mov_estoque_repo.get_by_unidade(id_unidade, id_produto, offset, limit)
         return [MovEstoqueResponse.model_validate(m) for m in movimentacoes]

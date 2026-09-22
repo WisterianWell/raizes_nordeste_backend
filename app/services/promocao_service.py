@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import TipoDesconto
@@ -8,6 +8,9 @@ from app.repositories.produto_repo import ProdutoRepository
 from app.repositories.promocao_repo import PromocaoRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.promocao_schemas import ItemPromocaoRequest, PromocaoRequest, PromocaoResponse, PromocaoUpdate
+from app.exceptions import common_errors
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 
 class PromocaoService:
     def __init__(self, session: AsyncSession):
@@ -17,29 +20,41 @@ class PromocaoService:
 
     def _validate_data(self, data_inicio: datetime, data_fim: datetime) -> None:
         if data_fim <= data_inicio:
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_400_BAD_REQUEST,
-                detail="data_fim deve ser posterior a data_inicio."
+                error_code=ErrorCodes.DATA_INVALIDA,
+                message="data_fim deve ser posterior a data_inicio.",
+                details=[{
+                    "field": "data_fim",
+                    "issue": "Data fim deve ser posterior a data_inicio"
+                }],
             )
 
     async def _validate_unidade(self, id_unidade: int | None) -> None:
         if id_unidade is not None and not await self.unidade_repo.get_by_id(id_unidade):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()
 
     async def _validate_itens(self, itens: list[ItemPromocaoRequest]) -> None:
-        for item in itens:
+        for index, item in enumerate(itens):
             if not await self.produto_repo.get_by_id(item.id_produto):
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"Produto {item.id_produto} não encontrado."
+                    error_code=ErrorCodes.PRODUTO_NAO_ENCONTRADO,
+                    message="Um ou mais produtos informados não foram encontrados.",
+                    details=[{
+                        "field": f"itens[{index}].id_produto",
+                        "issue": f"Produto {item.id_produto} não encontrado",
+                    }],
                 )
             if item.tipo_valor == TipoDesconto.PERCENTUAL.value and not (0 < item.valor_desc <= 100):
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail=f"Para desconto percentual, valor_desc do produto {item.id_produto} deve estar entre 0 e 100."
+                    error_code=ErrorCodes.DESCONTO_INVALIDO,
+                    message="Um ou mais itens possuem valor de desconto inválido.",
+                    details=[{
+                        "field": f"itens[{index}].valor_desc",
+                        "issue": "Para desconto percentual, deve estar entre 0 e 100",
+                    }],
                 )
 
     async def create_promocao(self, dados: PromocaoRequest) -> PromocaoResponse:
@@ -57,10 +72,7 @@ class PromocaoService:
     async def get_promocao_by_id(self, id_promocao: int) -> PromocaoResponse:
         promocao = await self.repo.get_by_id(id_promocao)
         if not promocao:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Promoção não encontrada."
-            )
+            raise common_errors.promocao_nao_encontrada()
         return PromocaoResponse.model_validate(promocao)
 
     async def get_promocoes(
@@ -77,10 +89,7 @@ class PromocaoService:
     async def update_promocao(self, id_promocao: int, dados: PromocaoUpdate) -> PromocaoResponse:
         promocao = await self.repo.get_by_id(id_promocao)
         if not promocao:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Promoção não encontrada."
-            )
+            raise common_errors.promocao_nao_encontrada()
         update_data = dados.model_dump(exclude_unset=True)
         data_inicio = update_data.get("data_inicio", promocao.data_inicio)
         data_fim = update_data.get("data_fim", promocao.data_fim)
@@ -97,10 +106,7 @@ class PromocaoService:
     async def delete_promocao(self, id_promocao: int) -> None:
         deleted = await self.repo.delete(id_promocao)
         if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Promoção não encontrada."
-            )
+            raise common_errors.promocao_nao_encontrada()
 
     async def calc_preco_desconto(self, id_produto: int, id_unidade: int, preco: float) -> float:
         date_now = datetime.now(timezone.utc)

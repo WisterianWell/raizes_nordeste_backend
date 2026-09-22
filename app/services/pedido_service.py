@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import CanalPedido, StatusPagamento, StatusPedido, TipoMovEstoque
@@ -14,6 +14,9 @@ from app.repositories.pagamento_repo import PagamentoRepository
 from app.repositories.pedido_repo import PedidoRepository
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
+from app.exceptions import common_errors
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.services.fidelizacao_service import FidelizacaoService
 from app.services.promocao_service import PromocaoService
 
@@ -41,10 +44,7 @@ class PedidoService:
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
         if isinstance(current_usuario, Cliente) and current_usuario.id_cliente != id_cliente:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você só pode acessar os seus próprios pedidos."
-            )
+            raise common_errors.acesso_negado_pedido()
 
     async def create_pedido(self, dados: PedidoRequest, current_usuario: Cliente | Funcionario) -> PedidoResponse:
         if isinstance(current_usuario, Cliente):
@@ -52,34 +52,43 @@ class PedidoService:
         else:
             id_cliente = dados.id_cliente
             if id_cliente is None and dados.canal in CANAIS_CLIENTE_OBRIGATORIO:
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="id_cliente é obrigatório para esse canal de pedido."
+                    error_code=ErrorCodes.CLIENTE_OBRIGATORIO,
+                    message="id_cliente é obrigatório para esse canal de pedido.",
+                    details=[{
+                        "field": "id_cliente",
+                        "issue": "Obrigatório para esse canal de pedido"
+                    }],
                 )
         if id_cliente is not None and not await self.cliente_repo.get_by_id(id_cliente):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Cliente não encontrado."
-            )
+            raise common_errors.cliente_nao_encontrado()
         if not await self.unidade_repo.get_by_id(dados.id_unidade):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()
         itens_list = []
         valor_total = 0
-        for item in dados.itens:
+        for index, item in enumerate(dados.itens):
             cardapio_item = await self.cardapio_repo.get_item_cardapio(item.id_produto, dados.id_unidade)
             if not cardapio_item or not cardapio_item.disponivel:
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_404_NOT_FOUND,
-                    detail=f"{item.id_produto} não está disponível no cardápio dessa unidade."
+                    error_code=ErrorCodes.ITEM_CARDAPIO_INDISPONIVEL,
+                    message="Um ou mais itens não estão disponíveis no cardápio dessa unidade.",
+                    details=[{
+                        "field": f"itens[{index}].id_produto",
+                        "issue": f"Produto {item.id_produto} não disponível nessa unidade",
+                    }],
                 )
             estoque_item = await self.estoque_repo.get_item_estoque(item.id_produto, dados.id_unidade)
             if not estoque_item or estoque_item.quantidade < item.quantidade:
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_409_CONFLICT,
-                    detail=f"{item.id_produto} possui estoque insuficiente."
+                    error_code=ErrorCodes.ESTOQUE_INSUFICIENTE,
+                    message="Não há quantidade suficiente para um ou mais itens.",
+                    details=[{
+                        "field": f"itens[{index}].quantidade",
+                        "issue": f"Disponível: {estoque_item.quantidade}",
+                    }],
                 )
             preco_unitario = await self.promocao_service.calc_preco_desconto(
                 item.id_produto, dados.id_unidade, float(cardapio_item.preco)
@@ -114,10 +123,7 @@ class PedidoService:
     async def get_pedido_by_id(self, id_pedido: int, current_usuario: Cliente | Funcionario) -> PedidoResponse:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Pedido não encontrado."
-            )
+            raise common_errors.pedido_nao_encontrado()
         self._verify_cliente(pedido.id_cliente, current_usuario)
         return PedidoResponse.model_validate(pedido)
 
@@ -133,9 +139,14 @@ class PedidoService:
         if isinstance(current_usuario, Cliente):
             id_cliente = current_usuario.id_cliente
         elif current_usuario.cargo not in CARGOS_ADMIN and id_unidade is None:
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Informe id_unidade para listar pedidos com esse cargo."
+                error_code=ErrorCodes.UNIDADE_OBRIGATORIA,
+                message="Informe id_unidade para listar pedidos com esse cargo.",
+                details=[{
+                    "field": "id_unidade",
+                    "issue": "Obrigatório para esse cargo"
+                }]
             )
         pedidos = await self.repo.get_pedidos(
             id_cliente=id_cliente, id_unidade=id_unidade, canal=canal, offset=offset, limit=limit
@@ -145,14 +156,16 @@ class PedidoService:
     async def avancar_status_pedido(self, id_pedido: int) -> PedidoResponse:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Pedido não encontrado."
-            )
+            raise common_errors.pedido_nao_encontrado()
         if pedido.status in STATUS_FINALIZADOS:
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Pedido já finalizado e não pode ter o status alterado."
+                error_code=ErrorCodes.PEDIDO_JA_FINALIZADO,
+                message="Pedido já finalizado e não pode ter o status alterado.",
+                details=[{
+                    "field": "status",
+                    "issue": f"Pedido possui status {pedido.status} e não pode ser alterado",
+                }],
             )
         indice_atual = ORDEM_STATUS.index(pedido.status)
         proximo_status = ORDEM_STATUS[indice_atual + 1]
@@ -162,15 +175,17 @@ class PedidoService:
     async def cancelar_pedido(self, id_pedido: int, current_usuario: Cliente | Funcionario) -> PedidoResponse:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Pedido não encontrado."
-            )
+            raise common_errors.pedido_nao_encontrado()
         self._verify_cliente(pedido.id_cliente, current_usuario)
         if pedido.status in STATUS_FINALIZADOS:
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Pedido já finalizado e não pode ser cancelado."
+                error_code=ErrorCodes.PEDIDO_JA_FINALIZADO,
+                message="Pedido já finalizado e não pode ser cancelado.",
+                details=[{
+                    "field": "status",
+                    "issue": f"Pedido possui status {pedido.status} e não pode ser cancelado",
+                }],
             )
         for item in pedido.itens:
             estoque_item = await self.estoque_repo.get_item_estoque(item.id_produto, pedido.id_unidade)

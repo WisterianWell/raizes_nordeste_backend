@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.models.item_estoque import ItemEstoque
@@ -13,6 +13,9 @@ from app.schemas.cardapio_schemas import (
     CardapioResponse,
     CardapioUpdate,
 )
+from app.exceptions import common_errors
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.services.promocao_service import PromocaoService
 
 class CardapioService:
@@ -27,7 +30,7 @@ class CardapioService:
         preco_com_desconto = await self.promocao_service.calc_preco_desconto(
             item_cardapio.id_produto, item_cardapio.id_unidade, preco
         )
-        return preco_com_desconto if preco_com_desconto < preco else None
+        return round(preco_com_desconto, 2) if preco_com_desconto < preco else None
 
     async def _build_response(self, item_cardapio: ItemCardapio, estoque: ItemEstoque) -> CardapioResponse:
         preco = float(item_cardapio.preco)
@@ -56,19 +59,18 @@ class CardapioService:
 
     async def create_cardapio(self, dados: CardapioRequest) -> CardapioResponse:
         if not await self.produto_repo.get_by_id(dados.id_produto):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado."
-            )
+            raise common_errors.produto_nao_encontrado()
         if not await self.unidade_repo.get_by_id(dados.id_unidade):
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()
         if await self.repo.get_item_cardapio(dados.id_produto, dados.id_unidade):
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Produto já cadastrado nessa unidade."
+                error_code=ErrorCodes.ITEM_CARDAPIO_JA_CADASTRADO,
+                message="Produto já cadastrado nessa unidade.",
+                details=[{
+                    "field": f"id_produto: {dados.id_produto}, id_unidade: {dados.id_unidade}",
+                    "issue": f"Produto já cadastrado na unidade {dados.id_unidade}"
+                }],
             )
         item_cardapio = await self.repo.create_item_cardapio(
             id_produto=dados.id_produto,
@@ -87,10 +89,7 @@ class CardapioService:
         item_cardapio = await self.repo.get_item_cardapio(id_produto, id_unidade)
         estoque = await self.estoque_repo.get_item_estoque(id_produto, id_unidade)
         if not item_cardapio or not estoque:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado nessa unidade."
-            )
+            raise common_errors.item_cardapio_nao_encontrado()
         return await self._build_response(item_cardapio, estoque)
 
     async def get_cardapio_by_unidade(
@@ -105,10 +104,7 @@ class CardapioService:
         item_cardapio = await self.repo.get_item_cardapio(id_produto, id_unidade)
         estoque = await self.estoque_repo.get_item_estoque(id_produto, id_unidade)
         if not item_cardapio or not estoque:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado nessa unidade."
-            )
+            raise common_errors.item_cardapio_nao_encontrado()
         update_data = dados.model_dump(exclude_unset=True)
         item_cardapio = await self.repo.update_item_cardapio(id_produto, id_unidade, **update_data)
         return await self._build_response(item_cardapio, estoque)
@@ -116,8 +112,5 @@ class CardapioService:
     async def delete_item(self, id_produto: int, id_unidade: int) -> None:
         deleted = await self.repo.delete_item_cardapio(id_produto, id_unidade)
         if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado nessa unidade."
-            )
+            raise common_errors.item_cardapio_nao_encontrado()
         await self.estoque_repo.delete_item_estoque(id_produto, id_unidade)

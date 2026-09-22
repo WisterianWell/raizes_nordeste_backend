@@ -1,8 +1,8 @@
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.produto_repo import ProdutoRepository
 from app.schemas.produto_schemas import ProdutoRequest, ProdutoResponse, ProdutoUpdate
+from app.exceptions import common_errors
 
 class ProdutoService:
     def __init__(self, session: AsyncSession):
@@ -18,10 +18,7 @@ class ProdutoService:
     async def get_produto_by_id(self, id_produto: int) -> ProdutoResponse:
         produto = await self.repo.get_by_id(id_produto)
         if not produto:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado."
-            )
+            raise common_errors.produto_nao_encontrado()
         return ProdutoResponse.model_validate(produto)
 
     async def get_produtos(
@@ -33,10 +30,7 @@ class ProdutoService:
     async def update_produto(self, id_produto: int, dados: ProdutoUpdate) -> ProdutoResponse:
         produto = await self.repo.get_by_id(id_produto)
         if not produto:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado."
-            )
+            raise common_errors.produto_nao_encontrado()
         update_data = dados.model_dump(exclude_unset=True)
         produto = await self.repo.update(id_produto, **update_data)
         return ProdutoResponse.model_validate(produto)
@@ -44,7 +38,4 @@ class ProdutoService:
     async def delete_produto(self, id_produto: int) -> None:
         deleted = await self.repo.delete(id_produto)
         if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Produto não encontrado."
-            )
+            raise common_errors.produto_nao_encontrado()

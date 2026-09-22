@@ -1,5 +1,5 @@
 import jwt
-from fastapi import HTTPException, status
+from fastapi import status
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
@@ -9,14 +9,17 @@ from app.repositories.cliente_repo import ClienteRepository
 from app.repositories.funcionario_repo import FuncionarioRepository
 from app.enums import TipoUsuario
 from app.core.config import get_settings
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.core.security import verify_senha, create_token_acesso, create_token_refresh, DUMMY_HASH
 from app.schemas.auth_schemas import TokenResponse
 
 settings = get_settings()
 
-credentials_exception = HTTPException(
+credentials_exception = AppException(
     status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Refresh token inválido ou expirado.",
+    error_code=ErrorCodes.REFRESH_TOKEN_INVALIDO,
+    message="Refresh token inválido ou expirado.",
     headers={"WWW-Authenticate": "Bearer"}
 )
 
@@ -55,9 +58,10 @@ class AuthService:
         funcionario = await self.authenticate_funcionario(email, senha)
         if funcionario:
             return self._build_tokens(str(funcionario.id_funcionario), TipoUsuario.FUNCIONARIO.value)
-        raise HTTPException(
+        raise AppException(
             status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Email ou senha incorretos.",
+            error_code=ErrorCodes.CREDENCIAIS_INVALIDAS,
+            message="Email ou senha inválidos.",
             headers={"WWW-Authenticate": "Bearer"}
         )
 

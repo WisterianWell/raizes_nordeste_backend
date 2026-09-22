@@ -3,6 +3,7 @@ from fastapi import FastAPI
 from sqlalchemy import select
 
 from app.core.config import get_settings, Settings
+from app.exceptions.error_handlers import register_error_handlers
 from app.core.security import get_senha_hash
 from app.database import sessionmanager
 from app.models.base import Base
@@ -50,6 +51,7 @@ def create_app() -> FastAPI:
         version=settings.app_version,
         lifespan=lifespan,
     )
+    register_error_handlers(app)
     app.include_router(api_router)
 
     @app.get("/health", summary="verfica a saúde da API")

@@ -1,5 +1,5 @@
 from typing import Annotated
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_usuario, requer_cliente_ou_cargo
@@ -8,6 +8,8 @@ from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ATENDIMENTO
 from app.schemas.fidelizacao_schemas import FidelizacaoResponse, MovPontosResponse
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.services.fidelizacao_service import FidelizacaoService
 
 router = APIRouter()
@@ -21,9 +23,10 @@ async def aceitar_termos_fidelizacao(
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
 ) -> FidelizacaoResponse:
     if not isinstance(current_usuario, Cliente):
-        raise HTTPException(
+        raise AppException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas clientes podem aceitar os termos de fidelização."
+            error_code=ErrorCodes.APENAS_CLIENTE,
+            message="Apenas clientes podem aceitar os termos de fidelização."
         )
     return await service.aceitar_termos(current_usuario.id_cliente)
 
@@ -33,9 +36,10 @@ async def revogar_termos_fidelizacao(
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
 ) -> FidelizacaoResponse:
     if not isinstance(current_usuario, Cliente):
-        raise HTTPException(
+        raise AppException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail="Apenas clientes podem revogar os termos de fidelização."
+            error_code=ErrorCodes.APENAS_CLIENTE,
+            message="Apenas clientes podem revogar os termos de fidelização."
         )
     return await service.revogar_termos(current_usuario.id_cliente)
 

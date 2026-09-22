@@ -1,4 +1,4 @@
-from fastapi import HTTPException, status
+from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import StatusPagamento, StatusPedido
@@ -7,6 +7,9 @@ from app.models.funcionario import Funcionario
 from app.repositories.pagamento_repo import PagamentoRepository
 from app.repositories.pedido_repo import PedidoRepository
 from app.schemas.pagamento_schemas import PagamentoRequest, PagamentoResponse
+from app.exceptions import common_errors
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.gateways.pagamento import GatewayPagamentoMock
 from app.services.fidelizacao_service import FidelizacaoService
 
@@ -19,40 +22,49 @@ class PagamentoService:
 
     def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
         if isinstance(current_usuario, Cliente) and current_usuario.id_cliente != id_cliente:
-            raise HTTPException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você só pode acessar os seus próprios pedidos."
-            )
+            raise common_errors.acesso_negado_pedido()
 
     async def pagar_pedido(
         self, id_pedido: int, dados: PagamentoRequest, current_usuario: Cliente | Funcionario
     ) -> PagamentoResponse:
         pedido = await self.pedido_repo.get_by_id(id_pedido)
         if not pedido:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Pedido não encontrado."
-            )
+            raise common_errors.pedido_nao_encontrado()
         self._verify_cliente(pedido.id_cliente, current_usuario)
         if pedido.status == StatusPedido.CANCELADO.value:
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Pedido cancelado não pode ser pago."
+                error_code=ErrorCodes.PEDIDO_CANCELADO,
+                message="Pedido cancelado não pode ser pago.",
+                details=[{
+                    "field": "status",
+                    "issue": "Pedido possui status CANCELADO",
+                }],
             )
         pagamentos_existentes = await self.repo.get_by_pedido(id_pedido)
         if any(p.status == StatusPagamento.APROVADO.value for p in pagamentos_existentes):
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
-                detail="Pedido já está pago."
+                error_code=ErrorCodes.PEDIDO_JA_PAGO,
+                message="Pedido já está pago.",
+                details=[{
+                    "field": "status_pagamento",
+                    "issue": "Pedido já possui pagamento aprovado",
+                }],
             )
         valor_original = float(pedido.valor_total)
         valor = valor_original
         pontos_resgatados = dados.pontos_resgatados or 0
         if pontos_resgatados:
             if pedido.id_cliente is None:
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_400_BAD_REQUEST,
-                    detail="Pedido sem cliente associado não pode resgatar pontos."
+                    error_code=ErrorCodes.CLIENTE_OBRIGATORIO,
+                    message="Pedido sem cliente associado não pode resgatar pontos.",
+                    details=[{
+                        "field": "pontos_resgatados",
+                        "issue": "Pedido sem cliente associado não pode resgatar pontos",
+                    }],
                 )
             desconto = await self.fidelizacao_service.calcular_desconto(pedido.id_cliente, pontos_resgatados)
             valor = max(0.0, valor - desconto)
@@ -81,10 +93,7 @@ class PagamentoService:
     ) -> list[PagamentoResponse]:
         pedido = await self.pedido_repo.get_by_id(id_pedido)
         if not pedido:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Pedido não encontrado."
-            )
+            raise common_errors.pedido_nao_encontrado()
         self._verify_cliente(pedido.id_cliente, current_usuario)
         pagamentos = await self.repo.get_by_pedido(id_pedido, offset, limit)
         return [PagamentoResponse.model_validate(pagamento) for pagamento in pagamentos]

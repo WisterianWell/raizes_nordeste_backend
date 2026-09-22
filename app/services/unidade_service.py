@@ -1,8 +1,8 @@
-from fastapi import HTTPException, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.repositories.unidade_repo import UnidadeRepository
 from app.schemas.unidade_schemas import UnidadeRequest, UnidadeResponse, UnidadeUpdate
+from app.exceptions import common_errors
 
 class UnidadeService:
     def __init__(self, session: AsyncSession):
@@ -19,10 +19,7 @@ class UnidadeService:
     async def get_unidade_by_id(self, id_unidade: int) -> UnidadeResponse:
         unidade = await self.repo.get_by_id(id_unidade)
         if not unidade:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()
         return UnidadeResponse.model_validate(unidade)
 
     async def get_all_unidades(self, offset: int = 0, limit: int = 10) -> list[UnidadeResponse]:
@@ -32,10 +29,7 @@ class UnidadeService:
     async def update_unidade(self, id_unidade: int, dados: UnidadeUpdate) -> UnidadeResponse:
         unidade = await self.repo.get_by_id(id_unidade)
         if not unidade:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()
         update_data = dados.model_dump(exclude_unset=True)
         unidade = await self.repo.update(id_unidade, **update_data)
         return UnidadeResponse.model_validate(unidade)
@@ -43,7 +37,4 @@ class UnidadeService:
     async def delete_unidade(self, id_unidade: int) -> None:
         deleted = await self.repo.delete(id_unidade)
         if not deleted:
-            raise HTTPException(
-                status_code=status.HTTP_404_NOT_FOUND,
-                detail="Unidade não encontrada."
-            )
+            raise common_errors.unidade_nao_encontrada()

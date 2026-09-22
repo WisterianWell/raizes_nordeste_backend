@@ -1,12 +1,14 @@
 from typing import Annotated
 
 import jwt
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends, status
 from fastapi.security import OAuth2PasswordBearer
 from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.exceptions.error_codes import ErrorCodes
+from app.exceptions.exceptions import AppException
 from app.database import get_db_session
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
@@ -18,9 +20,10 @@ from app.schemas.auth_schemas import TokenData
 settings = get_settings()
 oauth2_scheme = OAuth2PasswordBearer(tokenUrl="v1/auth/login")
 
-credentials_exception = HTTPException(
+credentials_exception = AppException(
     status_code=status.HTTP_401_UNAUTHORIZED,
-    detail="Não foi possível validar as credenciais.",
+    error_code=ErrorCodes.TOKEN_INVALIDO,
+    message="Não foi possível validar as credenciais.",
     headers={"WWW-Authenticate": "Bearer"},
 )
 
@@ -53,14 +56,16 @@ def requer_cargo(*cargos_permitidos: CargoFunc):
         current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
     ) -> Funcionario:
         if not isinstance(current_usuario, Funcionario):
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Acesso restrito a funcionários.",
+                error_code=ErrorCodes.FUNCIONARIO_REQUERIDO,
+                message="Acesso restrito a funcionários.",
             )
         if current_usuario.cargo not in valores_permitidos:
-            raise HTTPException(
+            raise AppException(
                 status_code=status.HTTP_403_FORBIDDEN,
-                detail="Você não tem permissão para acessar este recurso.",
+                error_code=ErrorCodes.CARGO_NAO_PERMITIDO,
+                message="Você não tem permissão para acessar este recurso.",
             )
         return current_usuario
     return _checar
@@ -73,9 +78,10 @@ def requer_cliente_ou_cargo(*cargos_permitidos: CargoFunc):
     ) -> Cliente | Funcionario:
         if isinstance(current_usuario, Cliente):
             if current_usuario.id_cliente != id_cliente:
-                raise HTTPException(
+                raise AppException(
                     status_code=status.HTTP_403_FORBIDDEN,
-                    detail="Você só pode acessar a sua própria conta.",
+                    error_code=ErrorCodes.ACESSO_NEGADO,
+                    message="Você só pode acessar a sua própria conta.",
                 )
             return current_usuario
         return await checar_perfil(current_usuario)

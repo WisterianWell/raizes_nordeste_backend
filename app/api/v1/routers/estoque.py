@@ -35,7 +35,7 @@ async def criar_entrada_estoque(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> list[MovEstoqueResponse]:
-    return await service.dar_entrada(data)
+    return await service.criar_entrada(data)
 
 @router.post("/saida")
 async def criar_saida_estoque(
@@ -45,7 +45,7 @@ async def criar_saida_estoque(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> list[MovEstoqueResponse]:
-    return await service.dar_saida(data)
+    return await service.criar_saida(data)
 
 @router.get("/{id_unidade}/movimentacoes")
 async def get_movimentacoes_estoque(
