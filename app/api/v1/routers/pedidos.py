@@ -6,9 +6,10 @@ from app.dependencies import get_current_usuario, requer_cargo
 from app.database import get_db_session
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
-from app.enums import CanalPedido
+from app.enums import AcaoAuditoria, CanalPedido
 from app.cargos import CARGOS_OPERACIONAIS
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
+from app.services.auditoria_service import registrar_log
 from app.services.pedido_service import PedidoService
 
 router = APIRouter()
@@ -22,7 +23,13 @@ async def create_pedido(
     service: Annotated[PedidoService, Depends(get_pedido_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
 ) -> PedidoResponse:
-    return await service.create_pedido(data, current_usuario)
+    pedido = await service.create_pedido(data, current_usuario)
+    await registrar_log(
+        AcaoAuditoria.CRIACAO, "PEDIDO", usuario=current_usuario,
+        id_entidade=pedido.id_pedido, id_unidade=pedido.id_unidade,
+        detalhes={"canal": pedido.canal, "valor_total": pedido.valor_total},
+    )
+    return pedido
 
 @router.get("/")
 async def get_pedidos(
@@ -59,7 +66,14 @@ async def avancar_status_pedido(
         requer_cargo(*CARGOS_OPERACIONAIS)
         )],
 ) -> PedidoResponse:
-    return await service.avancar_status_pedido(id_pedido)
+    antes = await service.get_pedido_by_id(id_pedido, current_usuario)
+    pedido = await service.avancar_status_pedido(id_pedido)
+    await registrar_log(
+        AcaoAuditoria.ATUALIZACAO_STATUS, "PEDIDO", usuario=current_usuario,
+        id_entidade=id_pedido, id_unidade=pedido.id_unidade,
+        detalhes={"status_anterior": antes.status, "status_novo": pedido.status},
+    )
+    return pedido
 
 @router.patch("/{id_pedido}/cancelar")
 async def cancelar_pedido(
@@ -67,4 +81,10 @@ async def cancelar_pedido(
     service: Annotated[PedidoService, Depends(get_pedido_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
 ) -> PedidoResponse:
-    return await service.cancelar_pedido(id_pedido, current_usuario)
+    pedido = await service.cancelar_pedido(id_pedido, current_usuario)
+    await registrar_log(
+        AcaoAuditoria.CANCELAMENTO, "PEDIDO", usuario=current_usuario,
+        id_entidade=id_pedido, id_unidade=pedido.id_unidade,
+        detalhes={"valor_total": pedido.valor_total, "status_pagamento": pedido.status_pagamento},
+    )
+    return pedido

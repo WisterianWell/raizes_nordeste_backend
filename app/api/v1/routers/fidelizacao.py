@@ -4,12 +4,14 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_usuario, requer_cliente_ou_cargo
 from app.database import get_db_session
+from app.enums import AcaoAuditoria
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ATENDIMENTO
 from app.schemas.fidelizacao_schemas import FidelizacaoResponse, MovPontosResponse
 from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException
+from app.services.auditoria_service import registrar_log
 from app.services.fidelizacao_service import FidelizacaoService
 
 router = APIRouter()
@@ -28,7 +30,12 @@ async def aceitar_termos_fidelizacao(
             error_code=ErrorCodes.APENAS_CLIENTE,
             message="Apenas clientes podem aceitar os termos de fidelização."
         )
-    return await service.aceitar_termos(current_usuario.id_cliente)
+    resultado = await service.aceitar_termos(current_usuario.id_cliente)
+    await registrar_log(
+        AcaoAuditoria.CONSENTIMENTO_ACEITO, "FIDELIZACAO",
+        usuario=current_usuario, id_entidade=current_usuario.id_cliente,
+    )
+    return resultado
 
 @router.post("/termos/revogar")
 async def revogar_termos_fidelizacao(
@@ -41,7 +48,12 @@ async def revogar_termos_fidelizacao(
             error_code=ErrorCodes.APENAS_CLIENTE,
             message="Apenas clientes podem revogar os termos de fidelização."
         )
-    return await service.revogar_termos(current_usuario.id_cliente)
+    resultado = await service.revogar_termos(current_usuario.id_cliente)
+    await registrar_log(
+        AcaoAuditoria.CONSENTIMENTO_REVOGADO, "FIDELIZACAO",
+        usuario=current_usuario, id_entidade=current_usuario.id_cliente,
+    )
+    return resultado
 
 @router.get("/{id_cliente}")
 async def get_fidelizacao(

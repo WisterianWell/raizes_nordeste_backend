@@ -7,12 +7,13 @@ from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.cliente_repo import ClienteRepository
 from app.repositories.funcionario_repo import FuncionarioRepository
-from app.enums import TipoUsuario
+from app.enums import AcaoAuditoria, TipoUsuario
 from app.core.config import get_settings
 from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException
 from app.core.security import verify_senha, create_token_acesso, create_token_refresh, DUMMY_HASH
 from app.schemas.auth_schemas import TokenResponse
+from app.services.auditoria_service import registrar_log
 
 settings = get_settings()
 
@@ -54,10 +55,17 @@ class AuthService:
     async def login(self, email: str, senha: str) -> TokenResponse:
         cliente = await self.authenticate_cliente(email, senha)
         if cliente:
+            await registrar_log(
+                AcaoAuditoria.LOGIN_SUCESSO, "AUTH", usuario=cliente, id_entidade=cliente.id_cliente
+            )
             return self._build_tokens(str(cliente.id_cliente), TipoUsuario.CLIENTE.value)
         funcionario = await self.authenticate_funcionario(email, senha)
         if funcionario:
+            await registrar_log(
+                AcaoAuditoria.LOGIN_SUCESSO, "AUTH", usuario=funcionario, id_entidade=funcionario.id_funcionario
+            )
             return self._build_tokens(str(funcionario.id_funcionario), TipoUsuario.FUNCIONARIO.value)
+        await registrar_log(AcaoAuditoria.LOGIN_FALHA, "AUTH", detalhes={"email": email})
         raise AppException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             error_code=ErrorCodes.CREDENCIAIS_INVALIDAS,

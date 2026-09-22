@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo
 from app.database import get_db_session
+from app.enums import AcaoAuditoria
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN
 from app.schemas.funcionario_schemas import FuncionarioRequest, FuncionarioResponse, FuncionarioUpdate
+from app.services.auditoria_service import registrar_log
 from app.services.funcionario_service import FuncionarioService
 
 router = APIRouter()
@@ -22,7 +24,13 @@ async def create_funcionario(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
-    return await service.create_funcionario(data)
+    funcionario = await service.create_funcionario(data)
+    await registrar_log(
+        AcaoAuditoria.CRIACAO, "FUNCIONARIO", usuario=current_usuario,
+        id_entidade=funcionario.id_funcionario, id_unidade=funcionario.id_unidade,
+        detalhes={"cargo": funcionario.cargo},
+    )
+    return funcionario
 
 @router.get("/{id_funcionario}")
 async def get_funcionario_by_id(
@@ -55,7 +63,14 @@ async def update_funcionario(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
-    return await service.update_funcionario(id_funcionario, data)
+    funcionario = await service.update_funcionario(id_funcionario, data)
+    campos_alterados = list(data.model_dump(exclude_unset=True, exclude={"senha"}).keys())
+    await registrar_log(
+        AcaoAuditoria.ATUALIZACAO, "FUNCIONARIO", usuario=current_usuario,
+        id_entidade=id_funcionario, id_unidade=funcionario.id_unidade,
+        detalhes={"campos_alterados": campos_alterados},
+    )
+    return funcionario
 
 @router.delete("/{id_funcionario}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_funcionario(
@@ -65,4 +80,9 @@ async def delete_funcionario(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ):
+    funcionario = await service.get_funcionario_by_id(id_funcionario)
     await service.delete_funcionario(id_funcionario)
+    await registrar_log(
+        AcaoAuditoria.EXCLUSAO, "FUNCIONARIO", usuario=current_usuario,
+        id_entidade=id_funcionario, id_unidade=funcionario.id_unidade,
+    )

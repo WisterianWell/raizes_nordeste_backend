@@ -4,9 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo
 from app.database import get_db_session
+from app.enums import AcaoAuditoria
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN
 from app.schemas.promocao_schemas import PromocaoRequest, PromocaoResponse, PromocaoUpdate
+from app.services.auditoria_service import registrar_log
 from app.services.promocao_service import PromocaoService
 
 router = APIRouter()
@@ -22,7 +24,12 @@ async def create_promocao(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> PromocaoResponse:
-    return await service.create_promocao(data)
+    promocao = await service.create_promocao(data)
+    await registrar_log(
+        AcaoAuditoria.CRIACAO, "PROMOCAO", usuario=current_usuario,
+        id_entidade=promocao.id_promocao, id_unidade=promocao.id_unidade,
+    )
+    return promocao
 
 @router.get("/")
 async def get_promocoes(
@@ -51,7 +58,14 @@ async def update_promocao(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> PromocaoResponse:
-    return await service.update_promocao(id_promocao, data)
+    promocao = await service.update_promocao(id_promocao, data)
+    campos_alterados = list(data.model_dump(exclude_unset=True).keys())
+    await registrar_log(
+        AcaoAuditoria.ATUALIZACAO, "PROMOCAO", usuario=current_usuario,
+        id_entidade=id_promocao, id_unidade=promocao.id_unidade,
+        detalhes={"campos_alterados": campos_alterados},
+    )
+    return promocao
 
 @router.delete("/{id_promocao}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_promocao(
@@ -61,4 +75,9 @@ async def delete_promocao(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ):
+    promocao = await service.get_promocao_by_id(id_promocao)
     await service.delete_promocao(id_promocao)
+    await registrar_log(
+        AcaoAuditoria.EXCLUSAO, "PROMOCAO", usuario=current_usuario,
+        id_entidade=id_promocao, id_unidade=promocao.id_unidade,
+    )
