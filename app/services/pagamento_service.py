@@ -2,6 +2,7 @@ from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.enums import StatusPagamento, StatusPedido
+from app.dependencies import verificar_mesma_unidade
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.pagamento_repo import PagamentoRepository
@@ -20,9 +21,12 @@ class PagamentoService:
         self.fidelizacao_service = FidelizacaoService(session)
         self.gateway = GatewayPagamentoMock()
 
-    def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
-        if isinstance(current_usuario, Cliente) and current_usuario.id_cliente != id_cliente:
-            raise common_errors.acesso_negado_pedido()
+    def _verificar_acesso(self, pedido, current_usuario: Cliente | Funcionario) -> None:
+        if isinstance(current_usuario, Cliente):
+            if current_usuario.id_cliente != pedido.id_cliente:
+                raise common_errors.acesso_negado_pedido()
+        else:
+            verificar_mesma_unidade(current_usuario, pedido.id_unidade)
 
     async def pagar_pedido(
         self, id_pedido: int, dados: PagamentoRequest, current_usuario: Cliente | Funcionario
@@ -30,7 +34,7 @@ class PagamentoService:
         pedido = await self.pedido_repo.get_by_id(id_pedido)
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
-        self._verify_cliente(pedido.id_cliente, current_usuario)
+        self._verificar_acesso(pedido, current_usuario)
         if pedido.status == StatusPedido.CANCELADO.value:
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
@@ -94,6 +98,6 @@ class PagamentoService:
         pedido = await self.pedido_repo.get_by_id(id_pedido)
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
-        self._verify_cliente(pedido.id_cliente, current_usuario)
+        self._verificar_acesso(pedido, current_usuario)
         pagamentos = await self.repo.get_by_pedido(id_pedido, offset, limit)
         return [PagamentoResponse.model_validate(pagamento) for pagamento in pagamentos]

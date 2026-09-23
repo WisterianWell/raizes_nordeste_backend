@@ -112,3 +112,14 @@ def email_ja_cadastrado() -> AppException:
             "issue": "Email já cadastrado"
         }]
     )
+
+def unidade_nao_permitida() -> AppException:
+    return AppException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        error_code=ErrorCodes.UNIDADE_NAO_PERMITIDA,
+        message="Você só pode acessar recursos da sua própria unidade.",
+        details=[{
+            "field": "id_unidade",
+            "issue": "Funcionário só tem acesso à unidade associada ao seu cadastro"
+        }]
+    )

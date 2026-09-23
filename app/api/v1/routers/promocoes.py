@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import requer_cargo
+from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
 from app.enums import AcaoAuditoria
 from app.models.funcionario import Funcionario
@@ -24,6 +24,7 @@ async def create_promocao(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> PromocaoResponse:
+    verificar_mesma_unidade(current_usuario, data.id_unidade)
     promocao = await service.create_promocao(data)
     await registrar_log(
         AcaoAuditoria.CRIACAO, "PROMOCAO", usuario=current_usuario,
@@ -58,8 +59,13 @@ async def update_promocao(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> PromocaoResponse:
+    atual = await service.get_promocao_by_id(id_promocao)
+    verificar_mesma_unidade(current_usuario, atual.id_unidade)
+    update_data = data.model_dump(exclude_unset=True)
+    if "id_unidade" in update_data:
+        verificar_mesma_unidade(current_usuario, update_data["id_unidade"])
     promocao = await service.update_promocao(id_promocao, data)
-    campos_alterados = list(data.model_dump(exclude_unset=True).keys())
+    campos_alterados = list(update_data.keys())
     await registrar_log(
         AcaoAuditoria.ATUALIZACAO, "PROMOCAO", usuario=current_usuario,
         id_entidade=id_promocao, id_unidade=promocao.id_unidade,
@@ -76,6 +82,7 @@ async def delete_promocao(
         )],
 ):
     promocao = await service.get_promocao_by_id(id_promocao)
+    verificar_mesma_unidade(current_usuario, promocao.id_unidade)
     await service.delete_promocao(id_promocao)
     await registrar_log(
         AcaoAuditoria.EXCLUSAO, "PROMOCAO", usuario=current_usuario,

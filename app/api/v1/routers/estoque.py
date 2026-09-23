@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import requer_cargo
+from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
 from app.enums import AcaoAuditoria
 from app.models.funcionario import Funcionario
@@ -21,6 +21,10 @@ def _id_unidade_comum(data: MovEstoqueRequest) -> int | None:
     unidades = {item.id_unidade for item in data.itens}
     return unidades.pop() if len(unidades) == 1 else None
 
+def _verificar_unidades_lote(current_usuario: Funcionario, data: MovEstoqueRequest) -> None:
+    for item in data.itens:
+        verificar_mesma_unidade(current_usuario, item.id_unidade)
+
 @router.get("/")
 async def get_estoque_by_unidade(
     id_unidade: int,
@@ -31,6 +35,7 @@ async def get_estoque_by_unidade(
     offset: int = 0,
     limit: int = 10,
 ) -> list[CardapioResponse]:
+    verificar_mesma_unidade(current_usuario, id_unidade)
     return await service.get_estoque_by_unidade(id_unidade, offset, limit)
 
 @router.post("/entrada")
@@ -41,6 +46,7 @@ async def criar_entrada_estoque(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> list[MovEstoqueResponse]:
+    _verificar_unidades_lote(current_usuario, data)
     resultado = await service.criar_entrada(data)
     await registrar_log(
         AcaoAuditoria.MOVIMENTACAO_ESTOQUE, "ESTOQUE", usuario=current_usuario,
@@ -57,6 +63,7 @@ async def criar_saida_estoque(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> list[MovEstoqueResponse]:
+    _verificar_unidades_lote(current_usuario, data)
     resultado = await service.criar_saida(data)
     await registrar_log(
         AcaoAuditoria.MOVIMENTACAO_ESTOQUE, "ESTOQUE", usuario=current_usuario,
@@ -76,4 +83,5 @@ async def get_movimentacoes_estoque(
     offset: int = 0,
     limit: int = 10,
 ) -> list[MovEstoqueResponse]:
+    verificar_mesma_unidade(current_usuario, id_unidade)
     return await service.get_movimentacoes(id_unidade, id_produto, offset, limit)

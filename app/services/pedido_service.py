@@ -1,8 +1,8 @@
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import CanalPedido, StatusPagamento, StatusPedido, TipoMovEstoque
-from app.cargos import CARGOS_ADMIN
+from app.enums import CanalPedido, CargoFunc, StatusPagamento, StatusPedido, TipoMovEstoque
+from app.dependencies import verificar_mesma_unidade
 from app.gateways.pagamento import GatewayPagamentoMock
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
@@ -42,14 +42,18 @@ class PedidoService:
         self.promocao_service = PromocaoService(session)
         self.gateway = GatewayPagamentoMock()
 
-    def _verify_cliente(self, id_cliente: int | None, current_usuario: Cliente | Funcionario) -> None:
-        if isinstance(current_usuario, Cliente) and current_usuario.id_cliente != id_cliente:
-            raise common_errors.acesso_negado_pedido()
+    def _verificar_acesso(self, pedido, current_usuario: Cliente | Funcionario) -> None:
+        if isinstance(current_usuario, Cliente):
+            if current_usuario.id_cliente != pedido.id_cliente:
+                raise common_errors.acesso_negado_pedido()
+        else:
+            verificar_mesma_unidade(current_usuario, pedido.id_unidade)
 
     async def create_pedido(self, dados: PedidoRequest, current_usuario: Cliente | Funcionario) -> PedidoResponse:
         if isinstance(current_usuario, Cliente):
             id_cliente = current_usuario.id_cliente
         else:
+            verificar_mesma_unidade(current_usuario, dados.id_unidade)
             id_cliente = dados.id_cliente
             if id_cliente is None and dados.canal in CANAIS_CLIENTE_OBRIGATORIO:
                 raise AppException(
@@ -124,7 +128,7 @@ class PedidoService:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
-        self._verify_cliente(pedido.id_cliente, current_usuario)
+        self._verificar_acesso(pedido, current_usuario)
         return PedidoResponse.model_validate(pedido)
 
     async def get_pedidos(
@@ -138,16 +142,10 @@ class PedidoService:
     ) -> list[PedidoResponse]:
         if isinstance(current_usuario, Cliente):
             id_cliente = current_usuario.id_cliente
-        elif current_usuario.cargo not in CARGOS_ADMIN and id_unidade is None:
-            raise AppException(
-                status_code=status.HTTP_403_FORBIDDEN,
-                error_code=ErrorCodes.UNIDADE_OBRIGATORIA,
-                message="Informe id_unidade para listar pedidos com esse cargo.",
-                details=[{
-                    "field": "id_unidade",
-                    "issue": "Obrigatório para esse cargo"
-                }]
-            )
+        elif current_usuario.cargo != CargoFunc.ADMIN.value:
+            if id_unidade is not None:
+                verificar_mesma_unidade(current_usuario, id_unidade)
+            id_unidade = current_usuario.id_unidade
         pedidos = await self.repo.get_pedidos(
             id_cliente=id_cliente, id_unidade=id_unidade, canal=canal, offset=offset, limit=limit
         )
@@ -176,7 +174,7 @@ class PedidoService:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
-        self._verify_cliente(pedido.id_cliente, current_usuario)
+        self._verificar_acesso(pedido, current_usuario)
         if pedido.status in STATUS_FINALIZADOS:
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,

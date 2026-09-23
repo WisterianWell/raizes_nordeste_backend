@@ -2,9 +2,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import requer_cargo
+from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
-from app.enums import AcaoAuditoria
+from app.enums import AcaoAuditoria, CargoFunc
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN
 from app.schemas.funcionario_schemas import FuncionarioRequest, FuncionarioResponse, FuncionarioUpdate
@@ -24,6 +24,7 @@ async def create_funcionario(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
+    verificar_mesma_unidade(current_usuario, data.id_unidade)
     funcionario = await service.create_funcionario(data)
     await registrar_log(
         AcaoAuditoria.CRIACAO, "FUNCIONARIO", usuario=current_usuario,
@@ -40,7 +41,9 @@ async def get_funcionario_by_id(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
-    return await service.get_funcionario_by_id(id_funcionario)
+    funcionario = await service.get_funcionario_by_id(id_funcionario)
+    verificar_mesma_unidade(current_usuario, funcionario.id_unidade)
+    return funcionario
 
 @router.get("/")
 async def get_funcionarios(
@@ -52,6 +55,10 @@ async def get_funcionarios(
     offset: int = 0,
     limit: int = 10,
 ) -> list[FuncionarioResponse]:
+    if current_usuario.cargo != CargoFunc.ADMIN.value:
+        if id_unidade is not None:
+            verificar_mesma_unidade(current_usuario, id_unidade)
+        id_unidade = current_usuario.id_unidade
     return await service.get_funcionarios(id_unidade, offset, limit)
 
 @router.patch("/{id_funcionario}")
@@ -63,6 +70,8 @@ async def update_funcionario(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> FuncionarioResponse:
+    funcionario_atual = await service.get_funcionario_by_id(id_funcionario)
+    verificar_mesma_unidade(current_usuario, funcionario_atual.id_unidade)
     funcionario = await service.update_funcionario(id_funcionario, data)
     campos_alterados = list(data.model_dump(exclude_unset=True, exclude={"senha"}).keys())
     await registrar_log(
@@ -81,6 +90,7 @@ async def delete_funcionario(
         )],
 ):
     funcionario = await service.get_funcionario_by_id(id_funcionario)
+    verificar_mesma_unidade(current_usuario, funcionario.id_unidade)
     await service.delete_funcionario(id_funcionario)
     await registrar_log(
         AcaoAuditoria.EXCLUSAO, "FUNCIONARIO", usuario=current_usuario,

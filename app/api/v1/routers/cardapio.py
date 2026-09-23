@@ -2,7 +2,7 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import requer_cargo
+from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
 from app.enums import AcaoAuditoria
 from app.models.funcionario import Funcionario
@@ -29,6 +29,7 @@ async def create_cardapio_item(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> CardapioResponse:
+    verificar_mesma_unidade(current_usuario, data.id_unidade)
     item = await service.create_cardapio(data)
     await registrar_log(
         AcaoAuditoria.CRIACAO, "CARDAPIO", usuario=current_usuario,
@@ -55,6 +56,7 @@ async def get_cardapio_item(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> CardapioResponse:
+    verificar_mesma_unidade(current_usuario, id_unidade)
     return await service.get_item(id_produto, id_unidade)
 
 @router.patch("/{id_produto}/{id_unidade}")
@@ -67,6 +69,7 @@ async def update_cardapio_item(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> CardapioResponse:
+    verificar_mesma_unidade(current_usuario, id_unidade)
     antes = await service.get_item(id_produto, id_unidade)
     item = await service.update_item(id_produto, id_unidade, data)
     await registrar_log(
@@ -88,6 +91,7 @@ async def delete_cardapio_item(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ):
+    verificar_mesma_unidade(current_usuario, id_unidade)
     item = await service.get_item(id_produto, id_unidade)
     await service.delete_item(id_produto, id_unidade)
     await registrar_log(

@@ -7,6 +7,7 @@ from jwt.exceptions import InvalidTokenError
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.core.config import get_settings
+from app.exceptions import common_errors
 from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException
 from app.database import get_db_session
@@ -69,6 +70,12 @@ def requer_cargo(*cargos_permitidos: CargoFunc):
             )
         return current_usuario
     return _checar
+
+def verificar_mesma_unidade(usuario: Cliente | Funcionario, id_unidade: int | None) -> None:
+    if not isinstance(usuario, Funcionario) or usuario.cargo == CargoFunc.ADMIN.value:
+        return
+    if id_unidade is None or usuario.id_unidade != id_unidade:
+        raise common_errors.unidade_nao_permitida()
 
 def requer_cliente_ou_cargo(*cargos_permitidos: CargoFunc):
     checar_perfil = requer_cargo(*cargos_permitidos)
