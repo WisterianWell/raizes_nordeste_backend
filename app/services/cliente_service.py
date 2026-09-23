@@ -13,8 +13,7 @@ class ClienteService:
         existing_cliente = await self.repo.get_by_email(cliente.email)
         if existing_cliente:
             raise common_errors.email_ja_cadastrado()
-        existing_cpf = await self.repo.get_by_cpf(cliente.cpf)
-        if existing_cpf:
+        if cliente.cpf is not None and await self.repo.get_by_cpf(cliente.cpf):
             raise common_errors.cpf_ja_cadastrado()
         cliente = await self.repo.create(
             nome=cliente.nome,
@@ -44,7 +43,7 @@ class ClienteService:
             existing_email = await self.repo.get_by_email(update_data["email"])
             if existing_email and existing_email.id_cliente != id_cliente:
                 raise common_errors.email_ja_cadastrado()
-        if "cpf" in update_data:
+        if update_data.get("cpf") is not None:
             existing_cpf = await self.repo.get_by_cpf(update_data["cpf"])
             if existing_cpf and existing_cpf.id_cliente != id_cliente:
                 raise common_errors.cpf_ja_cadastrado()

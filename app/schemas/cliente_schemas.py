@@ -3,7 +3,7 @@ from pydantic import BaseModel, EmailStr
 class ClienteRequest(BaseModel):
     nome: str
     email: EmailStr
-    cpf: str
+    cpf: str | None = None
     telefone: str
     senha: str
 
@@ -18,6 +18,6 @@ class ClienteResponse(BaseModel):
     id_cliente: int
     nome: str
     email: EmailStr
-    cpf: str
+    cpf: str | None
     telefone: str
     model_config = {"from_attributes": True}

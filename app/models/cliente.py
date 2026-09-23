@@ -10,7 +10,7 @@ class Cliente(Base):
     id_cliente: Mapped[int] = mapped_column(primary_key=True, index=True)
     nome: Mapped[str] = mapped_column(String, index=True)
     email: Mapped[str] = mapped_column(String, unique=True, index=True)
-    cpf: Mapped[str] = mapped_column(String, unique=True, index=True)
+    cpf: Mapped[str | None] = mapped_column(String, unique=True, index=True)
     telefone: Mapped[str] = mapped_column(String)
     hashed_senha: Mapped[str] = mapped_column(String)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))
