@@ -13,6 +13,7 @@ class UnidadeService:
             nome=unidade.nome,
             endereco=unidade.endereco,
             telefone=unidade.telefone,
+            esta_aberta=unidade.esta_aberta,
         )
         return UnidadeResponse.model_validate(nova_unidade)
 
@@ -38,3 +39,15 @@ class UnidadeService:
         deleted = await self.repo.delete(id_unidade)
         if not deleted:
             raise common_errors.unidade_nao_encontrada()
+
+    async def abrir_unidade(self, id_unidade: int) -> UnidadeResponse:
+        unidade = await self.repo.update(id_unidade, esta_aberta=True)
+        if not unidade:
+            raise common_errors.unidade_nao_encontrada()
+        return UnidadeResponse.model_validate(unidade)
+
+    async def fechar_unidade(self, id_unidade: int) -> UnidadeResponse:
+        unidade = await self.repo.update(id_unidade, esta_aberta=False)
+        if not unidade:
+            raise common_errors.unidade_nao_encontrada()
+        return UnidadeResponse.model_validate(unidade)

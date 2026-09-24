@@ -123,3 +123,14 @@ def unidade_nao_permitida() -> AppException:
             "issue": "Funcionário só tem acesso à unidade associada ao seu cadastro"
         }]
     )
+
+def unidade_fechada() -> AppException:
+    return AppException(
+        status_code=status.HTTP_409_CONFLICT,
+        error_code=ErrorCodes.UNIDADE_FECHADA,
+        message="Unidade está fechada no momento.",
+        details=[{
+            "field": "id_unidade",
+            "issue": "Unidade está fechada e não pode receber novos pedidos"
+        }]
+    )

@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 
-from sqlalchemy import DateTime, String
+from sqlalchemy import Boolean, DateTime, String
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.models.base import Base
@@ -11,4 +11,5 @@ class Unidade(Base):
     nome: Mapped[str] = mapped_column(String, index=True)
     endereco: Mapped[str] = mapped_column(String)
     telefone: Mapped[str] = mapped_column(String)
+    esta_aberta: Mapped[bool] = mapped_column(Boolean, default=True)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

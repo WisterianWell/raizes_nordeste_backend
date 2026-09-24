@@ -67,8 +67,11 @@ class PedidoService:
                 )
         if id_cliente is not None and not await self.cliente_repo.get_by_id(id_cliente):
             raise common_errors.cliente_nao_encontrado()
-        if not await self.unidade_repo.get_by_id(dados.id_unidade):
+        unidade = await self.unidade_repo.get_by_id(dados.id_unidade)
+        if not unidade:
             raise common_errors.unidade_nao_encontrada()
+        if not unidade.esta_aberta:
+            raise common_errors.unidade_fechada()
         itens_list = []
         valor_total = 0
         for index, item in enumerate(dados.itens):

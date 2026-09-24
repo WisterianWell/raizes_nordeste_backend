@@ -4,10 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
-from app.enums import CargoFunc
+from app.enums import AcaoAuditoria, CargoFunc
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN
 from app.schemas.unidade_schemas import UnidadeRequest, UnidadeResponse, UnidadeUpdate
+from app.services.auditoria_service import registrar_log
 from app.services.unidade_service import UnidadeService
 
 router = APIRouter()
@@ -62,3 +63,35 @@ async def delete_unidade(
 ):
     verificar_mesma_unidade(current_usuario, id_unidade)
     await service.delete_unidade(id_unidade)
+
+@router.post("/{id_unidade}/abrir")
+async def abrir_unidade(
+    id_unidade: int,
+    service: Annotated[UnidadeService, Depends(get_unidade_service)],
+    current_usuario: Annotated[Funcionario, Depends(
+        requer_cargo(*CARGOS_ADMIN)
+        )],
+) -> UnidadeResponse:
+    verificar_mesma_unidade(current_usuario, id_unidade)
+    unidade = await service.abrir_unidade(id_unidade)
+    await registrar_log(
+        AcaoAuditoria.ABERTURA, "UNIDADE", usuario=current_usuario,
+        id_entidade=id_unidade, id_unidade=id_unidade,
+    )
+    return unidade
+
+@router.post("/{id_unidade}/fechar")
+async def fechar_unidade(
+    id_unidade: int,
+    service: Annotated[UnidadeService, Depends(get_unidade_service)],
+    current_usuario: Annotated[Funcionario, Depends(
+        requer_cargo(*CARGOS_ADMIN)
+        )],
+) -> UnidadeResponse:
+    verificar_mesma_unidade(current_usuario, id_unidade)
+    unidade = await service.fechar_unidade(id_unidade)
+    await registrar_log(
+        AcaoAuditoria.FECHAMENTO, "UNIDADE", usuario=current_usuario,
+        id_entidade=id_unidade, id_unidade=id_unidade,
+    )
+    return unidade
