@@ -2,12 +2,14 @@ from typing import Annotated
 from fastapi import APIRouter, Depends, status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import get_current_usuario, requer_cargo, requer_cliente_ou_cargo
+from app.dependencies import requer_cargo, requer_cliente_ou_cargo
 from app.database import get_db_session
+from app.enums import AcaoAuditoria, CargoFunc
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN, CARGOS_ATENDIMENTO
 from app.schemas.cliente_schemas import ClienteRequest, ClienteResponse, ClienteUpdate
+from app.services.auditoria_service import registrar_log
 from app.services.cliente_service import ClienteService
 
 router = APIRouter()
@@ -48,16 +50,27 @@ async def update_cliente(
     id_cliente: int,
     data: ClienteUpdate,
     service: Annotated[ClienteService, Depends(get_cliente_service)],
-    current_usuario: Annotated[Cliente, Depends(get_current_usuario)],
+    current_usuario: Annotated[Cliente | Funcionario, Depends(
+        requer_cliente_ou_cargo(CargoFunc.ADMIN)
+        )],
 ) -> ClienteResponse:
-    return await service.update_cliente(id_cliente, data)
+    cliente = await service.update_cliente(id_cliente, data)
+    campos_alterados = list(data.model_dump(exclude_unset=True, exclude={"senha"}).keys())
+    await registrar_log(
+        AcaoAuditoria.ATUALIZACAO, "CLIENTE", usuario=current_usuario,
+        id_entidade=id_cliente, detalhes={"campos_alterados": campos_alterados},
+    )
+    return cliente
 
 @router.delete("/{id_cliente}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_cliente(
     id_cliente: int,
     service: Annotated[ClienteService, Depends(get_cliente_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(
-        requer_cliente_ou_cargo(*CARGOS_ADMIN)
+        requer_cliente_ou_cargo(CargoFunc.ADMIN)
         )],
 ):
     await service.delete_cliente(id_cliente)
+    await registrar_log(
+        AcaoAuditoria.EXCLUSAO, "CLIENTE", usuario=current_usuario, id_entidade=id_cliente,
+    )
