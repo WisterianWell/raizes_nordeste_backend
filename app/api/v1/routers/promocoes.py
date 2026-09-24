@@ -35,6 +35,9 @@ async def create_promocao(
 @router.get("/")
 async def get_promocoes(
     service: Annotated[PromocaoService, Depends(get_promocao_service)],
+    current_usuario: Annotated[Funcionario, Depends(
+        requer_cargo(*CARGOS_ADMIN)
+        )],
     id_produto: int | None = None,
     id_unidade: int | None = None,
     ativo: bool | None = None,
@@ -47,6 +50,9 @@ async def get_promocoes(
 async def get_promocao_by_id(
     id_promocao: int,
     service: Annotated[PromocaoService, Depends(get_promocao_service)],
+    current_usuario: Annotated[Funcionario, Depends(
+        requer_cargo(*CARGOS_ADMIN)
+        )],
 ) -> PromocaoResponse:
     return await service.get_promocao_by_id(id_promocao)
 

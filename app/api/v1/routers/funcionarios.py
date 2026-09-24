@@ -7,6 +7,7 @@ from app.database import get_db_session
 from app.enums import AcaoAuditoria, CargoFunc
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN
+from app.exceptions import common_errors
 from app.schemas.funcionario_schemas import FuncionarioRequest, FuncionarioResponse, FuncionarioUpdate
 from app.services.auditoria_service import registrar_log
 from app.services.funcionario_service import FuncionarioService
@@ -25,6 +26,8 @@ async def create_funcionario(
         )],
 ) -> FuncionarioResponse:
     verificar_mesma_unidade(current_usuario, data.id_unidade)
+    if data.cargo == CargoFunc.ADMIN.value and current_usuario.cargo != CargoFunc.ADMIN.value:
+        raise common_errors.restrito_cargo_admin()
     funcionario = await service.create_funcionario(data)
     await registrar_log(
         AcaoAuditoria.CRIACAO, "FUNCIONARIO", usuario=current_usuario,
@@ -72,6 +75,8 @@ async def update_funcionario(
 ) -> FuncionarioResponse:
     funcionario_atual = await service.get_funcionario_by_id(id_funcionario)
     verificar_mesma_unidade(current_usuario, funcionario_atual.id_unidade)
+    if data.cargo == CargoFunc.ADMIN.value and current_usuario.cargo != CargoFunc.ADMIN.value:
+        raise common_errors.restrito_cargo_admin()
     funcionario = await service.update_funcionario(id_funcionario, data)
     campos_alterados = list(data.model_dump(exclude_unset=True, exclude={"senha"}).keys())
     await registrar_log(

@@ -134,3 +134,14 @@ def unidade_fechada() -> AppException:
             "issue": "Unidade está fechada e não pode receber novos pedidos"
         }]
     )
+
+def restrito_cargo_admin() -> AppException:
+    return AppException(
+        status_code=status.HTTP_403_FORBIDDEN,
+        error_code=ErrorCodes.RESTRITO_CARGO_ADMIN,
+        message="Apenas administradores podem atribuir o cargo ADMIN a um funcionário.",
+        details=[{
+            "field": "cargo",
+            "issue": "Somente um funcionário ADMIN pode definir o cargo ADMIN"
+        }]
+    )

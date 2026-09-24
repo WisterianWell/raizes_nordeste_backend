@@ -51,18 +51,28 @@ async def update_unidade(
         )],
 ) -> UnidadeResponse:
     verificar_mesma_unidade(current_usuario, id_unidade)
-    return await service.update_unidade(id_unidade, data)
+    unidade = await service.update_unidade(id_unidade, data)
+    campos_alterados = list(data.model_dump(exclude_unset=True).keys())
+    await registrar_log(
+        AcaoAuditoria.ATUALIZACAO, "UNIDADE", usuario=current_usuario,
+        id_entidade=id_unidade, id_unidade=id_unidade,
+        detalhes={"campos_alterados": campos_alterados},
+    )
+    return unidade
 
 @router.delete("/{id_unidade}", status_code=status.HTTP_204_NO_CONTENT)
 async def delete_unidade(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(*CARGOS_ADMIN)
+        requer_cargo(CargoFunc.ADMIN)
         )],
 ):
-    verificar_mesma_unidade(current_usuario, id_unidade)
     await service.delete_unidade(id_unidade)
+    await registrar_log(
+        AcaoAuditoria.EXCLUSAO, "UNIDADE", usuario=current_usuario,
+        id_entidade=id_unidade, id_unidade=id_unidade,
+    )
 
 @router.post("/{id_unidade}/abrir")
 async def abrir_unidade(

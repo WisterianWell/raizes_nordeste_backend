@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo
 from app.database import get_db_session
+from app.enums import CargoFunc
 from app.models.funcionario import Funcionario
 from app.cargos import CARGOS_ADMIN
 from app.schemas.produto_schemas import ProdutoRequest, ProdutoResponse, ProdutoUpdate
@@ -19,7 +20,7 @@ async def create_produto(
     data: ProdutoRequest,
     service: Annotated[ProdutoService, Depends(get_produto_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(*CARGOS_ADMIN)
+        requer_cargo(CargoFunc.ADMIN)
         )],
 ) -> ProdutoResponse:
     return await service.create_produto(data)
@@ -52,7 +53,7 @@ async def update_produto(
     data: ProdutoUpdate,
     service: Annotated[ProdutoService, Depends(get_produto_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(*CARGOS_ADMIN)
+        requer_cargo(CargoFunc.ADMIN)
         )],
 ) -> ProdutoResponse:
     return await service.update_produto(id_produto, data)
@@ -62,7 +63,7 @@ async def delete_produto(
     id_produto: int,
     service: Annotated[ProdutoService, Depends(get_produto_service)],
     current_usuario: Annotated[Funcionario, Depends(
-        requer_cargo(*CARGOS_ADMIN)
+        requer_cargo(CargoFunc.ADMIN)
         )],
 ):
     await service.delete_produto(id_produto)
