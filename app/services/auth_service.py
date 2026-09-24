@@ -12,7 +12,7 @@ from app.core.config import get_settings
 from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException
 from app.core.security import verify_senha, create_token_acesso, create_token_refresh, DUMMY_HASH
-from app.schemas.auth_schemas import TokenResponse
+from app.schemas.auth_schemas import TokenResponse, TokenUsuario
 from app.services.auditoria_service import registrar_log
 
 settings = get_settings()
@@ -47,10 +47,20 @@ class AuthService:
             return None
         return funcionario
 
-    def _build_tokens(self, sub: str, role: str) -> TokenResponse:
+    def _build_tokens(self, usuario: Cliente | Funcionario) -> TokenResponse:
+        if isinstance(usuario, Funcionario):
+            sub, id_usuario, role = str(usuario.id_funcionario), usuario.id_funcionario, TipoUsuario.FUNCIONARIO.value
+        else:
+            sub, id_usuario, role = str(usuario.id_cliente), usuario.id_cliente, TipoUsuario.CLIENTE.value
         access_token = create_token_acesso({"sub": sub, "role": role})
         refresh_token = create_token_refresh({"sub": sub, "role": role})
-        return TokenResponse(access_token=access_token, refresh_token=refresh_token, token_type="bearer")
+        return TokenResponse(
+            access_token=access_token,
+            refresh_token=refresh_token,
+            token_type="Bearer",
+            expires_in=settings.jwt_expiration_minutes * 60,
+            user=TokenUsuario(id=id_usuario, nome=usuario.nome, perfil=role),
+        )
 
     async def login(self, email: str, senha: str) -> TokenResponse:
         cliente = await self.authenticate_cliente(email, senha)
@@ -58,13 +68,13 @@ class AuthService:
             await registrar_log(
                 AcaoAuditoria.LOGIN_SUCESSO, "AUTH", usuario=cliente, id_entidade=cliente.id_cliente
             )
-            return self._build_tokens(str(cliente.id_cliente), TipoUsuario.CLIENTE.value)
+            return self._build_tokens(cliente)
         funcionario = await self.authenticate_funcionario(email, senha)
         if funcionario:
             await registrar_log(
                 AcaoAuditoria.LOGIN_SUCESSO, "AUTH", usuario=funcionario, id_entidade=funcionario.id_funcionario
             )
-            return self._build_tokens(str(funcionario.id_funcionario), TipoUsuario.FUNCIONARIO.value)
+            return self._build_tokens(funcionario)
         await registrar_log(AcaoAuditoria.LOGIN_FALHA, "AUTH", detalhes={"email": email})
         raise AppException(
             status_code=status.HTTP_401_UNAUTHORIZED,
@@ -90,4 +100,4 @@ class AuthService:
             usuario = await self.cliente_repo.get_by_id(int(sub))
         if usuario is None:
             raise credentials_exception
-        return self._build_tokens(sub, role)
+        return self._build_tokens(usuario)
