@@ -10,7 +10,7 @@ class FidelizacaoResponse(BaseModel):
     model_config = {"from_attributes": True}
 
 class MovPontosResponse(BaseModel):
-    id_movimentacao: int
+    id_mov_pontos: int
     id_cliente: int
     id_pedido: int | None
     tipo: str

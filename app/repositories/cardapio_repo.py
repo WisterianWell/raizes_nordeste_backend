@@ -20,7 +20,7 @@ class CardapioRepository(BaseRepository[ItemCardapio]):
     ) -> list[ItemCardapio]:
         query = select(ItemCardapio).where(ItemCardapio.id_unidade == id_unidade)
         if apenas_disponiveis:
-            query = query.where(ItemCardapio.disponivel.is_(True))
+            query = query.where(ItemCardapio.ativo.is_(True))
         query = query.offset(offset).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())

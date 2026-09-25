@@ -6,8 +6,8 @@ from sqlalchemy.orm import Mapped, mapped_column
 from app.models.base import Base
 
 class MovEstoque(Base):
-    __tablename__ = "mov_estoques"
-    id_movimentacao: Mapped[int] = mapped_column(primary_key=True, index=True)
+    __tablename__ = "mov_estoque"
+    id_mov_estoque: Mapped[int] = mapped_column(primary_key=True, index=True)
     id_produto: Mapped[int] = mapped_column(ForeignKey("produtos.id_produto"), index=True)
     id_unidade: Mapped[int] = mapped_column(ForeignKey("unidades.id_unidade"), index=True)
     id_pedido: Mapped[int | None] = mapped_column(ForeignKey("pedidos.id_pedido"), index=True)

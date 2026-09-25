@@ -5,11 +5,11 @@ class CardapioRequest(BaseModel):
     id_unidade: int
     preco: float
     estoque: int = 0
-    disponivel: bool = True
+    ativo: bool = True
 
 class CardapioUpdate(BaseModel):
     preco: float | None = None
-    disponivel: bool | None = None
+    ativo: bool | None = None
 
 class CardapioResponse(BaseModel):
     id_produto: int
@@ -19,7 +19,7 @@ class CardapioResponse(BaseModel):
     preco: float
     preco_promo: float | None
     estoque: int
-    disponivel: bool
+    ativo: bool
     model_config = {"from_attributes": True}
 
 class CardapioPublicoResponse(BaseModel):
@@ -29,5 +29,5 @@ class CardapioPublicoResponse(BaseModel):
     categoria: str
     preco: float
     preco_promo: float | None
-    disponivel: bool
+    ativo: bool
     model_config = {"from_attributes": True}

@@ -29,7 +29,7 @@ class PedidoResponse(BaseModel):
     id_cliente: int | None
     id_unidade: int
     canal: str
-    status: str
+    status_pedido: str
     status_pagamento: str | None
     valor_total: float
     created_at: datetime

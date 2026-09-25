@@ -36,7 +36,7 @@ class EstoqueService:
             preco=preco,
             preco_promo=round(preco_com_desconto, 2) if preco_com_desconto < preco else None,
             estoque=estoque.quantidade,
-            disponivel=item_cardapio.disponivel,
+            ativo=item_cardapio.ativo,
         )
 
     async def _search_item(self, id_produto: int, id_unidade: int) -> tuple[ItemCardapio, ItemEstoque]:

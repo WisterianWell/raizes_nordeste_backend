@@ -48,8 +48,8 @@ class PedidoRepository(BaseRepository[Pedido]):
         result = await self.session.execute(query)
         return list(result.scalars().all())
 
-    async def update_status_pedido(self, id_pedido: int, status: str) -> Pedido | None:
-        atualizado = await self.update(id_pedido, status=status)
+    async def update_status_pedido(self, id_pedido: int, status_pedido: str) -> Pedido | None:
+        atualizado = await self.update(id_pedido, status_pedido=status_pedido)
         if not atualizado:
             return None
         return await self.get_by_id(id_pedido)

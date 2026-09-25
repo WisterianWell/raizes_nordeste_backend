@@ -35,13 +35,13 @@ class PagamentoService:
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
         self._verificar_acesso(pedido, current_usuario)
-        if pedido.status == StatusPedido.CANCELADO.value:
+        if pedido.status_pedido == StatusPedido.CANCELADO.value:
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
                 error_code=ErrorCodes.PEDIDO_CANCELADO,
                 message="Pedido cancelado não pode ser pago.",
                 details=[{
-                    "field": "status",
+                    "field": "status_pedido",
                     "issue": "Pedido possui status CANCELADO",
                 }],
             )

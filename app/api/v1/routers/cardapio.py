@@ -34,7 +34,7 @@ async def create_cardapio_item(
     await registrar_log(
         AcaoAuditoria.CRIACAO, "CARDAPIO", usuario=current_usuario,
         id_entidade=item.id_produto, id_unidade=item.id_unidade,
-        detalhes={"preco": item.preco, "disponivel": item.disponivel},
+        detalhes={"preco": item.preco, "ativo": item.ativo},
     )
     return item
 
@@ -77,7 +77,7 @@ async def update_cardapio_item(
         id_entidade=id_produto, id_unidade=id_unidade,
         detalhes={
             "preco_anterior": antes.preco, "preco_novo": item.preco,
-            "disponivel_anterior": antes.disponivel, "disponivel_novo": item.disponivel,
+            "ativo_anterior": antes.ativo, "ativo_novo": item.ativo,
         },
     )
     return item

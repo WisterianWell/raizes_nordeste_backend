@@ -15,6 +15,6 @@ class LogAuditoria(Base):
     id_entidade: Mapped[int | None] = mapped_column(Integer, index=True)
     id_unidade: Mapped[int | None] = mapped_column(Integer, index=True)
     detalhes: Mapped[dict | None] = mapped_column(JSON)
-    criado_em: Mapped[datetime] = mapped_column(
+    created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=lambda: datetime.now(timezone.utc), index=True
     )

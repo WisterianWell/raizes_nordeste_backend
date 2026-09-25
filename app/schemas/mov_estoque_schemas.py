@@ -11,7 +11,7 @@ class MovEstoqueRequest(BaseModel):
     itens: list[ItemMovEstoqueRequest] = Field(min_length=1)
 
 class MovEstoqueResponse(BaseModel):
-    id_movimentacao: int
+    id_mov_estoque: int
     id_produto: int
     id_unidade: int
     id_pedido: int | None

@@ -29,6 +29,6 @@ class LogAuditoriaRepository(BaseRepository[LogAuditoria]):
             query = query.where(LogAuditoria.acao == acao)
         if id_unidade is not None:
             query = query.where(LogAuditoria.id_unidade == id_unidade)
-        query = query.order_by(LogAuditoria.criado_em.desc()).offset(offset).limit(limit)
+        query = query.order_by(LogAuditoria.created_at.desc()).offset(offset).limit(limit)
         result = await self.session.execute(query)
         return list(result.scalars().all())

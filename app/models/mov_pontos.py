@@ -7,7 +7,7 @@ from app.models.base import Base
 
 class MovPontos(Base):
     __tablename__ = "mov_pontos"
-    id_movimentacao: Mapped[int] = mapped_column(primary_key=True, index=True)
+    id_mov_pontos: Mapped[int] = mapped_column(primary_key=True, index=True)
     id_cliente: Mapped[int] = mapped_column(ForeignKey("clientes.id_cliente"), index=True)
     id_pedido: Mapped[int | None] = mapped_column(ForeignKey("pedidos.id_pedido"), index=True)
     tipo: Mapped[str] = mapped_column(String, index=True)

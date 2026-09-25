@@ -6,14 +6,14 @@ from app.enums import TipoDesconto
 
 class ItemPromocaoRequest(BaseModel):
     id_produto: int
-    tipo_valor: TipoDesconto
+    tipo_desc: TipoDesconto
     valor_desc: float = Field(gt=0)
     model_config = {"use_enum_values": True}
 
 class ItemPromocaoResponse(BaseModel):
     id_produto: int
     nome_produto: str
-    tipo_valor: str
+    tipo_desc: str
     valor_desc: float
     model_config = {"from_attributes": True}
 

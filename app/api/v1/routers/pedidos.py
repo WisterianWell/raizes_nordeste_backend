@@ -71,7 +71,7 @@ async def avancar_status_pedido(
     await registrar_log(
         AcaoAuditoria.ATUALIZACAO_STATUS, "PEDIDO", usuario=current_usuario,
         id_entidade=id_pedido, id_unidade=pedido.id_unidade,
-        detalhes={"status_anterior": antes.status, "status_novo": pedido.status},
+        detalhes={"status_anterior": antes.status_pedido, "status_novo": pedido.status_pedido},
     )
     return pedido
 

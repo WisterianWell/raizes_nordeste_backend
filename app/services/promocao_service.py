@@ -46,7 +46,7 @@ class PromocaoService:
                         "issue": f"Produto {item.id_produto} não encontrado",
                     }],
                 )
-            if item.tipo_valor == TipoDesconto.PERCENTUAL.value and not (0 < item.valor_desc <= 100):
+            if item.tipo_desc == TipoDesconto.PERCENTUAL.value and not (0 < item.valor_desc <= 100):
                 raise AppException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     error_code=ErrorCodes.DESCONTO_INVALIDO,
@@ -113,7 +113,7 @@ class PromocaoService:
         itens_vigentes = await self.repo.get_vigentes_by_item(id_produto, id_unidade, date_now)
         preco_desc = preco
         for item in itens_vigentes:
-            if item.tipo_valor == TipoDesconto.PERCENTUAL.value:
+            if item.tipo_desc == TipoDesconto.PERCENTUAL.value:
                 preco_com_desconto = preco * (1 - float(item.valor_desc) / 100)
             else:
                 preco_com_desconto = preco - float(item.valor_desc)

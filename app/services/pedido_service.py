@@ -76,7 +76,7 @@ class PedidoService:
         valor_total = 0
         for index, item in enumerate(dados.itens):
             cardapio_item = await self.cardapio_repo.get_item_cardapio(item.id_produto, dados.id_unidade)
-            if not cardapio_item or not cardapio_item.disponivel:
+            if not cardapio_item or not cardapio_item.ativo:
                 raise AppException(
                     status_code=status.HTTP_404_NOT_FOUND,
                     error_code=ErrorCodes.ITEM_CARDAPIO_INDISPONIVEL,
@@ -114,7 +114,7 @@ class PedidoService:
             id_cliente=id_cliente,
             id_unidade=dados.id_unidade,
             canal=dados.canal,
-            status=StatusPedido.PENDENTE.value,
+            status_pedido=StatusPedido.PENDENTE.value,
             valor_total=valor_total,
         )
         for item in itens_list:
@@ -158,17 +158,17 @@ class PedidoService:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
-        if pedido.status in STATUS_FINALIZADOS:
+        if pedido.status_pedido in STATUS_FINALIZADOS:
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
                 error_code=ErrorCodes.PEDIDO_JA_FINALIZADO,
                 message="Pedido já finalizado e não pode ter o status alterado.",
                 details=[{
-                    "field": "status",
-                    "issue": f"Pedido possui status {pedido.status} e não pode ser alterado",
+                    "field": "status_pedido",
+                    "issue": f"Pedido possui status {pedido.status_pedido} e não pode ser alterado",
                 }],
             )
-        indice_atual = ORDEM_STATUS.index(pedido.status)
+        indice_atual = ORDEM_STATUS.index(pedido.status_pedido)
         proximo_status = ORDEM_STATUS[indice_atual + 1]
         pedido = await self.repo.update_status_pedido(id_pedido, proximo_status)
         return PedidoResponse.model_validate(pedido)
@@ -178,14 +178,14 @@ class PedidoService:
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
         self._verificar_acesso(pedido, current_usuario)
-        if pedido.status in STATUS_FINALIZADOS:
+        if pedido.status_pedido in STATUS_FINALIZADOS:
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
                 error_code=ErrorCodes.PEDIDO_JA_FINALIZADO,
                 message="Pedido já finalizado e não pode ser cancelado.",
                 details=[{
-                    "field": "status",
-                    "issue": f"Pedido possui status {pedido.status} e não pode ser cancelado",
+                    "field": "status_pedido",
+                    "issue": f"Pedido possui status {pedido.status_pedido} e não pode ser cancelado",
                 }],
             )
         for item in pedido.itens:

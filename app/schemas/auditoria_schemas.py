@@ -11,5 +11,5 @@ class LogAuditoriaResponse(BaseModel):
     id_entidade: int | None
     id_unidade: int | None
     detalhes: dict | None
-    criado_em: datetime
+    created_at: datetime
     model_config = {"from_attributes": True}

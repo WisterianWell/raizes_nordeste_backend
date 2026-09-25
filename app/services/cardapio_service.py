@@ -42,7 +42,7 @@ class CardapioService:
             preco=preco,
             preco_promo=await self._calc_preco_promo(item_cardapio, preco),
             estoque=estoque.quantidade,
-            disponivel=item_cardapio.disponivel,
+            ativo=item_cardapio.ativo,
         )
 
     async def _build_publico_response(self, item_cardapio: ItemCardapio) -> CardapioPublicoResponse:
@@ -54,7 +54,7 @@ class CardapioService:
             categoria=item_cardapio.categoria,
             preco=preco,
             preco_promo=await self._calc_preco_promo(item_cardapio, preco),
-            disponivel=item_cardapio.disponivel,
+            ativo=item_cardapio.ativo,
         )
 
     async def create_cardapio(self, dados: CardapioRequest) -> CardapioResponse:
@@ -76,7 +76,7 @@ class CardapioService:
             id_produto=dados.id_produto,
             id_unidade=dados.id_unidade,
             preco=dados.preco,
-            disponivel=dados.disponivel,
+            ativo=dados.ativo,
         )
         estoque = await self.estoque_repo.create_item_estoque(
             id_produto=dados.id_produto,
