@@ -8,7 +8,7 @@ from app.core.security import get_senha_hash
 from app.database import sessionmanager
 from app.models.base import Base
 from app.models.funcionario import Funcionario
-from app.enums import CargoFunc
+from app.domain.enums import CargoFunc
 from app.repositories.funcionario_repo import FuncionarioRepository
 from app.api.router import api_router
 

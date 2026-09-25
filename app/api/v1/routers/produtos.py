@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo
 from app.database import get_db_session
-from app.enums import CargoFunc
+from app.domain.enums import CargoFunc
 from app.models.funcionario import Funcionario
-from app.cargos import CARGOS_ADMIN
+from app.domain.cargos import CARGOS_ADMIN
 from app.schemas.produto_schemas import ProdutoRequest, ProdutoResponse, ProdutoUpdate
 from app.services.produto_service import ProdutoService
 

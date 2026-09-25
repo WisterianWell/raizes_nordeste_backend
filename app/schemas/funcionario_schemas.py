@@ -1,6 +1,6 @@
 from pydantic import BaseModel, EmailStr
 
-from app.enums import CargoFunc
+from app.domain.enums import CargoFunc
 
 class FuncionarioRequest(BaseModel):
     id_unidade: int

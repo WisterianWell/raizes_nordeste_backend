@@ -1,7 +1,7 @@
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import TipoMovEstoque
+from app.domain.enums import TipoMovEstoque
 from app.models.item_cardapio import ItemCardapio
 from app.models.item_estoque import ItemEstoque
 from app.repositories.cardapio_repo import CardapioRepository

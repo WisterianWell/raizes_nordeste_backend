@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel
 
-from app.enums import FormaPagamento, StatusPagamento
+from app.domain.enums import FormaPagamento, StatusPagamento
 
 class PagamentoRequest(BaseModel):
     forma_pagamento: FormaPagamento

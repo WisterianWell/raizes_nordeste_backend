@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import TipoMovPontos
+from app.domain.enums import TipoMovPontos
+from app.domain.rules import calcular_desconto_pontos, calcular_pontos_ganhos
 from app.models.cliente import Cliente
 from app.models.fidelizacao import Fidelizacao
 from app.repositories.cliente_repo import ClienteRepository
@@ -13,9 +14,6 @@ from app.schemas.fidelizacao_schemas import FidelizacaoResponse, MovPontosRespon
 from app.exceptions import common_errors
 from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException
-
-PONTOS_POR_REAL = 1
-DESC_POR_PONTO = 0.1
 
 class FidelizacaoService:
     def __init__(self, session: AsyncSession):
@@ -76,7 +74,7 @@ class FidelizacaoService:
         cliente = await self.cliente_repo.get_by_id(id_cliente)
         if not cliente or not cliente.consent:
             return
-        pontos_ganhos = int(valor * PONTOS_POR_REAL)
+        pontos_ganhos = calcular_pontos_ganhos(valor)
         if pontos_ganhos <= 0:
             return
         fidelizacao = await self._get_or_create_fidelizacao(id_cliente)
@@ -128,7 +126,7 @@ class FidelizacaoService:
                     "issue": f"Saldo disponível: {fidelizacao.pontos}"
                 }],
             )
-        return pontos * DESC_POR_PONTO
+        return calcular_desconto_pontos(pontos)
 
     async def resgatar_pontos(self, id_cliente: int, id_pedido: int, pontos: int) -> None:
         fidelizacao = await self._get_or_create_fidelizacao(id_cliente)

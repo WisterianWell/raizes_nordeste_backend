@@ -1,7 +1,7 @@
 from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.database import sessionmanager
-from app.enums import AcaoAuditoria, TipoUsuario
+from app.domain.enums import AcaoAuditoria, TipoUsuario
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.log_auditoria_repo import LogAuditoriaRepository

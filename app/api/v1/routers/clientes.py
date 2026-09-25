@@ -4,10 +4,10 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo, requer_cliente_ou_cargo
 from app.database import get_db_session
-from app.enums import AcaoAuditoria, CargoFunc
+from app.domain.enums import AcaoAuditoria, CargoFunc
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
-from app.cargos import CARGOS_ADMIN, CARGOS_ATENDIMENTO
+from app.domain.cargos import CARGOS_ADMIN, CARGOS_ATENDIMENTO
 from app.schemas.cliente_schemas import ClienteRequest, ClienteResponse, ClienteUpdate
 from app.services.auditoria_service import registrar_log
 from app.services.cliente_service import ClienteService

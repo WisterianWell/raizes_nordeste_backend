@@ -3,7 +3,8 @@ from datetime import datetime, timezone
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import TipoDesconto
+from app.domain.enums import TipoDesconto
+from app.domain.rules import calcular_preco_com_desconto, desconto_percentual_valido, periodo_valido
 from app.repositories.produto_repo import ProdutoRepository
 from app.repositories.promocao_repo import PromocaoRepository
 from app.repositories.unidade_repo import UnidadeRepository
@@ -19,7 +20,7 @@ class PromocaoService:
         self.unidade_repo = UnidadeRepository(session)
 
     def _validate_data(self, data_inicio: datetime, data_fim: datetime) -> None:
-        if data_fim <= data_inicio:
+        if not periodo_valido(data_inicio, data_fim):
             raise AppException(
                 status_code=status.HTTP_400_BAD_REQUEST,
                 error_code=ErrorCodes.DATA_INVALIDA,
@@ -46,7 +47,7 @@ class PromocaoService:
                         "issue": f"Produto {item.id_produto} não encontrado",
                     }],
                 )
-            if item.tipo_desc == TipoDesconto.PERCENTUAL.value and not (0 < item.valor_desc <= 100):
+            if item.tipo_desc == TipoDesconto.PERCENTUAL.value and not desconto_percentual_valido(item.valor_desc):
                 raise AppException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     error_code=ErrorCodes.DESCONTO_INVALIDO,
@@ -111,11 +112,4 @@ class PromocaoService:
     async def calc_preco_desconto(self, id_produto: int, id_unidade: int, preco: float) -> float:
         date_now = datetime.now(timezone.utc)
         itens_vigentes = await self.repo.get_vigentes_by_item(id_produto, id_unidade, date_now)
-        preco_desc = preco
-        for item in itens_vigentes:
-            if item.tipo_desc == TipoDesconto.PERCENTUAL.value:
-                preco_com_desconto = preco * (1 - float(item.valor_desc) / 100)
-            else:
-                preco_com_desconto = preco - float(item.valor_desc)
-            preco_desc = min(preco_desc, max(0.0, preco_com_desconto))
-        return preco_desc
+        return calcular_preco_com_desconto(preco, itens_vigentes)

@@ -3,7 +3,7 @@ from datetime import datetime, timezone
 from sqlalchemy import DateTime, ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.enums import StatusPedido
+from app.domain.enums import StatusPedido
 from app.models.base import Base
 from app.models.item_pedido import ItemPedido
 from app.models.pagamento import Pagamento

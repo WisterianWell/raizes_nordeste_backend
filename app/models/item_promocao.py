@@ -1,7 +1,7 @@
 from sqlalchemy import ForeignKey, Numeric, String
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.enums import TipoDesconto
+from app.domain.enums import TipoDesconto
 from app.models.base import Base
 from app.models.produto import Produto
 

@@ -1,7 +1,7 @@
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import StatusPagamento, StatusPedido
+from app.domain.enums import StatusPagamento, StatusPedido
 from app.dependencies import verificar_mesma_unidade
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario

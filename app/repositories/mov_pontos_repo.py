@@ -1,7 +1,7 @@
 from sqlalchemy import select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import TipoMovPontos
+from app.domain.enums import TipoMovPontos
 from app.models.mov_pontos import MovPontos
 from app.repositories.base import BaseRepository
 

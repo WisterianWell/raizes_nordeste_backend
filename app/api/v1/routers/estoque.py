@@ -4,9 +4,9 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
-from app.enums import AcaoAuditoria
+from app.domain.enums import AcaoAuditoria
 from app.models.funcionario import Funcionario
-from app.cargos import CARGOS_ADMIN
+from app.domain.cargos import CARGOS_ADMIN
 from app.schemas.cardapio_schemas import CardapioResponse
 from app.schemas.mov_estoque_schemas import MovEstoqueRequest, MovEstoqueResponse
 from app.services.auditoria_service import registrar_log

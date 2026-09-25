@@ -7,7 +7,7 @@ from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.repositories.cliente_repo import ClienteRepository
 from app.repositories.funcionario_repo import FuncionarioRepository
-from app.enums import AcaoAuditoria, TipoUsuario
+from app.domain.enums import AcaoAuditoria, TipoUsuario
 from app.core.config import get_settings
 from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException

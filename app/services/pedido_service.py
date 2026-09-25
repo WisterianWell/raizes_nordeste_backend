@@ -1,8 +1,9 @@
 from fastapi import status
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.enums import CanalPedido, CargoFunc, StatusPagamento, StatusPedido, TipoMovEstoque
+from app.domain.enums import CargoFunc, StatusPagamento, StatusPedido, TipoMovEstoque
 from app.dependencies import verificar_mesma_unidade
+from app.domain.rules import cliente_obrigatorio_para_canal, esta_finalizado, proximo_status
 from app.gateways.pagamento import GatewayPagamentoMock
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
@@ -19,15 +20,6 @@ from app.exceptions.error_codes import ErrorCodes
 from app.exceptions.exceptions import AppException
 from app.services.fidelizacao_service import FidelizacaoService
 from app.services.promocao_service import PromocaoService
-
-STATUS_FINALIZADOS = {StatusPedido.ENTREGUE.value, StatusPedido.CANCELADO.value}
-CANAIS_CLIENTE_OBRIGATORIO = {CanalPedido.APP.value, CanalPedido.WEB.value, CanalPedido.PICKUP.value}
-ORDEM_STATUS = [
-    StatusPedido.PENDENTE.value,
-    StatusPedido.EM_PREPARO.value,
-    StatusPedido.PRONTO.value,
-    StatusPedido.ENTREGUE.value,
-]
 
 class PedidoService:
     def __init__(self, session: AsyncSession, gateway: GatewayPagamentoMock):
@@ -55,7 +47,7 @@ class PedidoService:
         else:
             verificar_mesma_unidade(current_usuario, dados.id_unidade)
             id_cliente = dados.id_cliente
-            if id_cliente is None and dados.canal in CANAIS_CLIENTE_OBRIGATORIO:
+            if id_cliente is None and cliente_obrigatorio_para_canal(dados.canal):
                 raise AppException(
                     status_code=status.HTTP_400_BAD_REQUEST,
                     error_code=ErrorCodes.CLIENTE_OBRIGATORIO,
@@ -158,7 +150,7 @@ class PedidoService:
         pedido = await self.repo.get_by_id(id_pedido)
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
-        if pedido.status_pedido in STATUS_FINALIZADOS:
+        if esta_finalizado(pedido.status_pedido):
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
                 error_code=ErrorCodes.PEDIDO_JA_FINALIZADO,
@@ -168,9 +160,7 @@ class PedidoService:
                     "issue": f"Pedido possui status {pedido.status_pedido} e não pode ser alterado",
                 }],
             )
-        indice_atual = ORDEM_STATUS.index(pedido.status_pedido)
-        proximo_status = ORDEM_STATUS[indice_atual + 1]
-        pedido = await self.repo.update_status_pedido(id_pedido, proximo_status)
+        pedido = await self.repo.update_status_pedido(id_pedido, proximo_status(pedido.status_pedido))
         return PedidoResponse.model_validate(pedido)
 
     async def cancelar_pedido(self, id_pedido: int, current_usuario: Cliente | Funcionario) -> PedidoResponse:
@@ -178,7 +168,7 @@ class PedidoService:
         if not pedido:
             raise common_errors.pedido_nao_encontrado()
         self._verificar_acesso(pedido, current_usuario)
-        if pedido.status_pedido in STATUS_FINALIZADOS:
+        if esta_finalizado(pedido.status_pedido):
             raise AppException(
                 status_code=status.HTTP_409_CONFLICT,
                 error_code=ErrorCodes.PEDIDO_JA_FINALIZADO,

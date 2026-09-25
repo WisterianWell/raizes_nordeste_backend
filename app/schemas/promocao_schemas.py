@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.enums import TipoDesconto
+from app.domain.enums import TipoDesconto
 
 class ItemPromocaoRequest(BaseModel):
     id_produto: int

@@ -7,8 +7,8 @@ from app.database import get_db_session
 from app.gateways.pagamento import GatewayPagamentoMock, get_gateway_pagamento
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
-from app.enums import AcaoAuditoria, CanalPedido
-from app.cargos import CARGOS_OPERACIONAIS
+from app.domain.enums import AcaoAuditoria, CanalPedido
+from app.domain.cargos import CARGOS_OPERACIONAIS
 from app.schemas.pedido_schemas import PedidoRequest, PedidoResponse
 from app.services.auditoria_service import registrar_log
 from app.services.pedido_service import PedidoService

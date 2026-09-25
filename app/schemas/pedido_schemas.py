@@ -2,7 +2,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from app.enums import CanalPedido
+from app.domain.enums import CanalPedido
 from app.schemas.pagamento_schemas import PagamentoResponse
 
 class ItemPedidoRequest(BaseModel):

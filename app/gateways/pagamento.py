@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from app.enums import StatusPagamento
+from app.domain.enums import StatusPagamento
 
 class GatewayPagamentoMock:
 
