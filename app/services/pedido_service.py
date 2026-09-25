@@ -30,7 +30,7 @@ ORDEM_STATUS = [
 ]
 
 class PedidoService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, gateway: GatewayPagamentoMock):
         self.repo = PedidoRepository(session)
         self.cliente_repo = ClienteRepository(session)
         self.unidade_repo = UnidadeRepository(session)
@@ -40,7 +40,7 @@ class PedidoService:
         self.mov_estoque_repo = MovEstoqueRepository(session)
         self.fidelizacao_service = FidelizacaoService(session)
         self.promocao_service = PromocaoService(session)
-        self.gateway = GatewayPagamentoMock()
+        self.gateway = gateway
 
     def _verificar_acesso(self, pedido, current_usuario: Cliente | Funcionario) -> None:
         if isinstance(current_usuario, Cliente):

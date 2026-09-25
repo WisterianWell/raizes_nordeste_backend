@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_usuario, requer_cargo
 from app.database import get_db_session
+from app.gateways.pagamento import GatewayPagamentoMock, get_gateway_pagamento
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.enums import AcaoAuditoria, CanalPedido
@@ -14,8 +15,11 @@ from app.services.pedido_service import PedidoService
 
 router = APIRouter()
 
-def get_pedido_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> PedidoService:
-    return PedidoService(db)
+def get_pedido_service(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    gateway: Annotated[GatewayPagamentoMock, Depends(get_gateway_pagamento)],
+) -> PedidoService:
+    return PedidoService(db, gateway)
 
 @router.post("/", status_code=status.HTTP_201_CREATED)
 async def create_pedido(

@@ -15,11 +15,11 @@ from app.gateways.pagamento import GatewayPagamentoMock
 from app.services.fidelizacao_service import FidelizacaoService
 
 class PagamentoService:
-    def __init__(self, session: AsyncSession):
+    def __init__(self, session: AsyncSession, gateway: GatewayPagamentoMock):
         self.repo = PagamentoRepository(session)
         self.pedido_repo = PedidoRepository(session)
         self.fidelizacao_service = FidelizacaoService(session)
-        self.gateway = GatewayPagamentoMock()
+        self.gateway = gateway
 
     def _verificar_acesso(self, pedido, current_usuario: Cliente | Funcionario) -> None:
         if isinstance(current_usuario, Cliente):

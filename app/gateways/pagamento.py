@@ -32,3 +32,6 @@ class GatewayPagamentoMock:
             "valor_processado": valor,
             "created_at": datetime.now(timezone.utc).isoformat(),
         }
+
+def get_gateway_pagamento() -> GatewayPagamentoMock:
+    return GatewayPagamentoMock()

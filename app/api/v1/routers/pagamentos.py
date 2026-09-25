@@ -4,6 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import get_current_usuario
 from app.database import get_db_session
+from app.gateways.pagamento import GatewayPagamentoMock, get_gateway_pagamento
 from app.models.cliente import Cliente
 from app.models.funcionario import Funcionario
 from app.schemas.pagamento_schemas import PagamentoRequest, PagamentoResponse
@@ -11,8 +12,11 @@ from app.services.pagamento_service import PagamentoService
 
 router = APIRouter()
 
-def get_pagamento_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> PagamentoService:
-    return PagamentoService(db)
+def get_pagamento_service(
+    db: Annotated[AsyncSession, Depends(get_db_session)],
+    gateway: Annotated[GatewayPagamentoMock, Depends(get_gateway_pagamento)],
+) -> PagamentoService:
+    return PagamentoService(db, gateway)
 
 @router.post("/{id_pedido}", status_code=status.HTTP_201_CREATED)
 async def pagar_pedido(
