@@ -15,7 +15,7 @@ router = APIRouter()
 def get_produto_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> ProdutoService:
     return ProdutoService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar produto")
 async def create_produto(
     data: ProdutoRequest,
     service: Annotated[ProdutoService, Depends(get_produto_service)],
@@ -25,7 +25,7 @@ async def create_produto(
 ) -> ProdutoResponse:
     return await service.create_produto(data)
 
-@router.get("/{id_produto}")
+@router.get("/{id_produto}", summary="Buscar produto por ID")
 async def get_produto_by_id(
     id_produto: int,
     service: Annotated[ProdutoService, Depends(get_produto_service)],
@@ -35,7 +35,7 @@ async def get_produto_by_id(
 ) -> ProdutoResponse:
     return await service.get_produto_by_id(id_produto)
 
-@router.get("/")
+@router.get("/", summary="Listar produtos")
 async def get_produtos(
     service: Annotated[ProdutoService, Depends(get_produto_service)],
     current_usuario: Annotated[Funcionario, Depends(
@@ -47,7 +47,7 @@ async def get_produtos(
 ) -> list[ProdutoResponse]:
     return await service.get_produtos(categoria, offset, limit)
 
-@router.patch("/{id_produto}")
+@router.patch("/{id_produto}", summary="Atualizar produto")
 async def update_produto(
     id_produto: int,
     data: ProdutoUpdate,
@@ -58,7 +58,7 @@ async def update_produto(
 ) -> ProdutoResponse:
     return await service.update_produto(id_produto, data)
 
-@router.delete("/{id_produto}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id_produto}", status_code=status.HTTP_204_NO_CONTENT, summary="Excluir produto")
 async def delete_produto(
     id_produto: int,
     service: Annotated[ProdutoService, Depends(get_produto_service)],

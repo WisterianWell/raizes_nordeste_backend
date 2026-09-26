@@ -17,7 +17,7 @@ router = APIRouter()
 def get_funcionario_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> FuncionarioService:
     return FuncionarioService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar funcionário")
 async def create_funcionario(
     data: FuncionarioRequest,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
@@ -36,7 +36,7 @@ async def create_funcionario(
     )
     return funcionario
 
-@router.get("/{id_funcionario}")
+@router.get("/{id_funcionario}", summary="Buscar funcionário por ID")
 async def get_funcionario_by_id(
     id_funcionario: int,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
@@ -48,7 +48,7 @@ async def get_funcionario_by_id(
     verificar_mesma_unidade(current_usuario, funcionario.id_unidade)
     return funcionario
 
-@router.get("/")
+@router.get("/", summary="Listar funcionários")
 async def get_funcionarios(
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],
     current_usuario: Annotated[Funcionario, Depends(
@@ -64,7 +64,7 @@ async def get_funcionarios(
         id_unidade = current_usuario.id_unidade
     return await service.get_funcionarios(id_unidade, offset, limit)
 
-@router.patch("/{id_funcionario}")
+@router.patch("/{id_funcionario}", summary="Atualizar funcionário")
 async def update_funcionario(
     id_funcionario: int,
     data: FuncionarioUpdate,
@@ -86,7 +86,7 @@ async def update_funcionario(
     )
     return funcionario
 
-@router.delete("/{id_funcionario}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id_funcionario}", status_code=status.HTTP_204_NO_CONTENT, summary="Excluir funcionário")
 async def delete_funcionario(
     id_funcionario: int,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],

@@ -18,7 +18,7 @@ def get_pagamento_service(
 ) -> PagamentoService:
     return PagamentoService(db, gateway)
 
-@router.post("/{id_pedido}", status_code=status.HTTP_201_CREATED)
+@router.post("/{id_pedido}", status_code=status.HTTP_201_CREATED, summary="Pagar pedido")
 async def pagar_pedido(
     id_pedido: int,
     data: PagamentoRequest,
@@ -27,7 +27,7 @@ async def pagar_pedido(
 ) -> PagamentoResponse:
     return await service.pagar_pedido(id_pedido, data, current_usuario)
 
-@router.get("/{id_pedido}")
+@router.get("/{id_pedido}", summary="Listar pagamentos do pedido")
 async def get_pagamentos_by_pedido(
     id_pedido: int,
     service: Annotated[PagamentoService, Depends(get_pagamento_service)],

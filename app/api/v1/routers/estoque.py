@@ -25,7 +25,7 @@ def _verificar_unidades_lote(current_usuario: Funcionario, data: MovEstoqueReque
     for item in data.itens:
         verificar_mesma_unidade(current_usuario, item.id_unidade)
 
-@router.get("/")
+@router.get("/", summary="Listar estoque de uma unidade")
 async def get_estoque_by_unidade(
     id_unidade: int,
     service: Annotated[EstoqueService, Depends(get_estoque_service)],
@@ -38,7 +38,7 @@ async def get_estoque_by_unidade(
     verificar_mesma_unidade(current_usuario, id_unidade)
     return await service.get_estoque_by_unidade(id_unidade, offset, limit)
 
-@router.post("/entrada")
+@router.post("/entrada", summary="Registrar entrada de estoque")
 async def criar_entrada_estoque(
     data: MovEstoqueRequest,
     service: Annotated[EstoqueService, Depends(get_estoque_service)],
@@ -55,7 +55,7 @@ async def criar_entrada_estoque(
     )
     return resultado
 
-@router.post("/saida")
+@router.post("/saida", summary="Registrar saída de estoque")
 async def criar_saida_estoque(
     data: MovEstoqueRequest,
     service: Annotated[EstoqueService, Depends(get_estoque_service)],
@@ -72,7 +72,7 @@ async def criar_saida_estoque(
     )
     return resultado
 
-@router.get("/{id_unidade}/movimentacoes")
+@router.get("/{id_unidade}/movimentacoes", summary="Listar movimentações de estoque")
 async def get_movimentacoes_estoque(
     id_unidade: int,
     service: Annotated[EstoqueService, Depends(get_estoque_service)],

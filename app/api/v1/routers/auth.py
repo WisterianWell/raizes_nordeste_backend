@@ -13,14 +13,14 @@ router = APIRouter()
 def get_auth_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> AuthService:
     return AuthService(db)
 
-@router.post("/login")
+@router.post("/login", summary="Login")
 async def login(
     form_data: Annotated[OAuth2PasswordRequestForm, Depends()],
     service: Annotated[AuthService, Depends(get_auth_service)],
 ) -> TokenResponse:
     return await service.login(email=form_data.username, senha=form_data.password)
 
-@router.post("/refresh")
+@router.post("/refresh", summary="Renovar token de acesso")
 async def refresh(
     data: RefreshRequest,
     service: Annotated[AuthService, Depends(get_auth_service)],

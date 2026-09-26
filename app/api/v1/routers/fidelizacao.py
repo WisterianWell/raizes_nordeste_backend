@@ -19,7 +19,7 @@ router = APIRouter()
 def get_fidelizacao_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> FidelizacaoService:
     return FidelizacaoService(db)
 
-@router.post("/termos", status_code=status.HTTP_201_CREATED)
+@router.post("/termos", status_code=status.HTTP_201_CREATED, summary="Aceitar termos de fidelização")
 async def aceitar_termos_fidelizacao(
     service: Annotated[FidelizacaoService, Depends(get_fidelizacao_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
@@ -37,7 +37,7 @@ async def aceitar_termos_fidelizacao(
     )
     return resultado
 
-@router.post("/termos/revogar")
+@router.post("/termos/revogar", summary="Revogar termos de fidelização")
 async def revogar_termos_fidelizacao(
     service: Annotated[FidelizacaoService, Depends(get_fidelizacao_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
@@ -55,7 +55,7 @@ async def revogar_termos_fidelizacao(
     )
     return resultado
 
-@router.get("/{id_cliente}")
+@router.get("/{id_cliente}", summary="Consultar saldo de fidelização")
 async def get_fidelizacao(
     id_cliente: int,
     service: Annotated[FidelizacaoService, Depends(get_fidelizacao_service)],
@@ -65,7 +65,7 @@ async def get_fidelizacao(
 ) -> FidelizacaoResponse:
     return await service.get_fidelizacao(id_cliente)
 
-@router.get("/{id_cliente}/movimentacoes")
+@router.get("/{id_cliente}/movimentacoes", summary="Listar movimentações de pontos")
 async def get_movimentacoes_pontos(
     id_cliente: int,
     service: Annotated[FidelizacaoService, Depends(get_fidelizacao_service)],

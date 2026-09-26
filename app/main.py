@@ -49,6 +49,9 @@ def create_app() -> FastAPI:
     app = FastAPI(
         title=settings.app_name,
         version=settings.app_version,
+        description=(
+            "API do Sistema Raízes Nordeste - gestão de uma rede de restaurantes com múltiplas unidades."
+        ),
         lifespan=lifespan,
     )
     register_error_handlers(app)

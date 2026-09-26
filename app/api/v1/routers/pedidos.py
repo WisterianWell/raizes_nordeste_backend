@@ -21,7 +21,7 @@ def get_pedido_service(
 ) -> PedidoService:
     return PedidoService(db, gateway)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar pedido")
 async def create_pedido(
     data: PedidoRequest,
     service: Annotated[PedidoService, Depends(get_pedido_service)],
@@ -35,7 +35,7 @@ async def create_pedido(
     )
     return pedido
 
-@router.get("/")
+@router.get("/", summary="Listar pedidos")
 async def get_pedidos(
     service: Annotated[PedidoService, Depends(get_pedido_service)],
     current_usuario: Annotated[Cliente | Funcionario, Depends(get_current_usuario)],
@@ -54,7 +54,7 @@ async def get_pedidos(
         limit=limit,
     )
 
-@router.get("/{id_pedido}")
+@router.get("/{id_pedido}", summary="Buscar pedido por ID")
 async def get_pedido_by_id(
     id_pedido: int,
     service: Annotated[PedidoService, Depends(get_pedido_service)],
@@ -62,7 +62,7 @@ async def get_pedido_by_id(
 ) -> PedidoResponse:
     return await service.get_pedido_by_id(id_pedido, current_usuario)
 
-@router.patch("/{id_pedido}/avancar")
+@router.patch("/{id_pedido}/avancar", summary="Avançar status do pedido")
 async def avancar_status_pedido(
     id_pedido: int,
     service: Annotated[PedidoService, Depends(get_pedido_service)],
@@ -79,7 +79,7 @@ async def avancar_status_pedido(
     )
     return pedido
 
-@router.patch("/{id_pedido}/cancelar")
+@router.patch("/{id_pedido}/cancelar", summary="Cancelar pedido")
 async def cancelar_pedido(
     id_pedido: int,
     service: Annotated[PedidoService, Depends(get_pedido_service)],

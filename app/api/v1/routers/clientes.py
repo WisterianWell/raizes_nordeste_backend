@@ -17,14 +17,14 @@ router = APIRouter()
 def get_cliente_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> ClienteService:
     return ClienteService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Cadastrar cliente")
 async def create_cliente(
     data: ClienteRequest,
     service: Annotated[ClienteService, Depends(get_cliente_service)],
 ) -> ClienteResponse:
     return await service.create_cliente(data)
 
-@router.get("/{id_cliente}")
+@router.get("/{id_cliente}", summary="Buscar cliente por ID")
 async def get_cliente_by_id(
     id_cliente: int,
     service: Annotated[ClienteService, Depends(get_cliente_service)],
@@ -34,7 +34,7 @@ async def get_cliente_by_id(
 ) -> ClienteResponse:
     return await service.get_cliente_by_id(id_cliente)
 
-@router.get("/")
+@router.get("/", summary="Listar clientes")
 async def get_all_clientes(
     service: Annotated[ClienteService, Depends(get_cliente_service)],
     current_usuario: Annotated[Funcionario, Depends(
@@ -45,7 +45,7 @@ async def get_all_clientes(
 ) -> list[ClienteResponse]:
     return await service.get_all_clientes(offset, limit)
 
-@router.patch("/{id_cliente}")
+@router.patch("/{id_cliente}", summary="Atualizar cliente")
 async def update_cliente(
     id_cliente: int,
     data: ClienteUpdate,
@@ -62,7 +62,7 @@ async def update_cliente(
     )
     return cliente
 
-@router.delete("/{id_cliente}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id_cliente}", status_code=status.HTTP_204_NO_CONTENT, summary="Excluir cliente")
 async def delete_cliente(
     id_cliente: int,
     service: Annotated[ClienteService, Depends(get_cliente_service)],

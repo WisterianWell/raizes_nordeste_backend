@@ -16,7 +16,7 @@ router = APIRouter()
 def get_promocao_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> PromocaoService:
     return PromocaoService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar promoção")
 async def create_promocao(
     data: PromocaoRequest,
     service: Annotated[PromocaoService, Depends(get_promocao_service)],
@@ -32,7 +32,7 @@ async def create_promocao(
     )
     return promocao
 
-@router.get("/")
+@router.get("/", summary="Listar promoções")
 async def get_promocoes(
     service: Annotated[PromocaoService, Depends(get_promocao_service)],
     current_usuario: Annotated[Funcionario, Depends(
@@ -46,7 +46,7 @@ async def get_promocoes(
 ) -> list[PromocaoResponse]:
     return await service.get_promocoes(id_produto, id_unidade, ativo, offset, limit)
 
-@router.get("/{id_promocao}")
+@router.get("/{id_promocao}", summary="Buscar promoção por ID")
 async def get_promocao_by_id(
     id_promocao: int,
     service: Annotated[PromocaoService, Depends(get_promocao_service)],
@@ -56,7 +56,7 @@ async def get_promocao_by_id(
 ) -> PromocaoResponse:
     return await service.get_promocao_by_id(id_promocao)
 
-@router.patch("/{id_promocao}")
+@router.patch("/{id_promocao}", summary="Atualizar promoção")
 async def update_promocao(
     id_promocao: int,
     data: PromocaoUpdate,
@@ -79,7 +79,7 @@ async def update_promocao(
     )
     return promocao
 
-@router.delete("/{id_promocao}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id_promocao}", status_code=status.HTTP_204_NO_CONTENT, summary="Excluir promoção")
 async def delete_promocao(
     id_promocao: int,
     service: Annotated[PromocaoService, Depends(get_promocao_service)],

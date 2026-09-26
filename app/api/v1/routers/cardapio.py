@@ -21,7 +21,7 @@ router = APIRouter()
 def get_cardapio_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> CardapioService:
     return CardapioService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Adicionar item ao cardápio")
 async def create_cardapio_item(
     data: CardapioRequest,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
@@ -38,7 +38,7 @@ async def create_cardapio_item(
     )
     return item
 
-@router.get("/")
+@router.get("/", summary="Listar cardápio de uma unidade")
 async def get_cardapio_by_unidade(
     id_unidade: int,
     service: Annotated[CardapioService, Depends(get_cardapio_service)],
@@ -47,7 +47,7 @@ async def get_cardapio_by_unidade(
 ) -> list[CardapioPublicoResponse]:
     return await service.get_cardapio_by_unidade(id_unidade, offset, limit, apenas_disponiveis=True)
 
-@router.get("/{id_produto}/{id_unidade}")
+@router.get("/{id_produto}/{id_unidade}", summary="Buscar item do cardápio")
 async def get_cardapio_item(
     id_produto: int,
     id_unidade: int,
@@ -59,7 +59,7 @@ async def get_cardapio_item(
     verificar_mesma_unidade(current_usuario, id_unidade)
     return await service.get_item(id_produto, id_unidade)
 
-@router.patch("/{id_produto}/{id_unidade}")
+@router.patch("/{id_produto}/{id_unidade}", summary="Atualizar item do cardápio")
 async def update_cardapio_item(
     id_produto: int,
     id_unidade: int,
@@ -82,7 +82,7 @@ async def update_cardapio_item(
     )
     return item
 
-@router.delete("/{id_produto}/{id_unidade}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id_produto}/{id_unidade}", status_code=status.HTTP_204_NO_CONTENT, summary="Remover item do cardápio")
 async def delete_cardapio_item(
     id_produto: int,
     id_unidade: int,

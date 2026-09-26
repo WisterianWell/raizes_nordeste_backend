@@ -14,7 +14,7 @@ router = APIRouter()
 def get_auditoria_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> AuditoriaService:
     return AuditoriaService(db)
 
-@router.get("/")
+@router.get("/", summary="Consultar logs de auditoria")
 async def get_logs_auditoria(
     service: Annotated[AuditoriaService, Depends(get_auditoria_service)],
     current_usuario: Annotated[Funcionario, Depends(

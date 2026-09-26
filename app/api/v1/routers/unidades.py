@@ -16,7 +16,7 @@ router = APIRouter()
 def get_unidade_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> UnidadeService:
     return UnidadeService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED)
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar unidade")
 async def create_unidade(
     data: UnidadeRequest,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
@@ -26,14 +26,14 @@ async def create_unidade(
 ) -> UnidadeResponse:
     return await service.create_unidade(data)
 
-@router.get("/{id_unidade}")
+@router.get("/{id_unidade}", summary="Buscar unidade por ID")
 async def get_unidade_by_id(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
 ) -> UnidadeResponse:
     return await service.get_unidade_by_id(id_unidade)
 
-@router.get("/")
+@router.get("/", summary="Listar unidades")
 async def get_all_unidades(
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
     offset: int = 0,
@@ -41,7 +41,7 @@ async def get_all_unidades(
 ) -> list[UnidadeResponse]:
     return await service.get_all_unidades(offset, limit)
 
-@router.patch("/{id_unidade}")
+@router.patch("/{id_unidade}", summary="Atualizar unidade")
 async def update_unidade(
     id_unidade: int,
     data: UnidadeUpdate,
@@ -60,7 +60,7 @@ async def update_unidade(
     )
     return unidade
 
-@router.delete("/{id_unidade}", status_code=status.HTTP_204_NO_CONTENT)
+@router.delete("/{id_unidade}", status_code=status.HTTP_204_NO_CONTENT, summary="Excluir unidade")
 async def delete_unidade(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
@@ -74,7 +74,7 @@ async def delete_unidade(
         id_entidade=id_unidade, id_unidade=id_unidade,
     )
 
-@router.post("/{id_unidade}/abrir")
+@router.post("/{id_unidade}/abrir", summary="Abrir unidade")
 async def abrir_unidade(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
@@ -90,7 +90,7 @@ async def abrir_unidade(
     )
     return unidade
 
-@router.post("/{id_unidade}/fechar")
+@router.post("/{id_unidade}/fechar", summary="Fechar unidade")
 async def fechar_unidade(
     id_unidade: int,
     service: Annotated[UnidadeService, Depends(get_unidade_service)],
