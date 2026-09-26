@@ -61,14 +61,16 @@ class EstoqueService:
         resultados = []
         for item in dados.itens:
             _, estoque_atual = await self._search_item(item.id_produto, item.id_unidade)
+            nova_quantidade = estoque_atual.quantidade + item.quantidade
             await self.repo.update_item_estoque(
-                item.id_produto, item.id_unidade, quantidade=estoque_atual.quantidade + item.quantidade
+                item.id_produto, item.id_unidade, quantidade=nova_quantidade
             )
             movimentacao = await self.mov_estoque_repo.create(
                 id_produto=item.id_produto,
                 id_unidade=item.id_unidade,
                 tipo=TipoMovEstoque.ENTRADA.value,
                 quantidade=item.quantidade,
+                quantidade_apos=nova_quantidade,
             )
             resultados.append(MovEstoqueResponse.model_validate(movimentacao))
         return resultados
@@ -87,14 +89,16 @@ class EstoqueService:
                         "issue": f"Quantidade disponível: {estoque_atual.quantidade}",
                     }],
                 )
+            nova_quantidade = estoque_atual.quantidade - item.quantidade
             await self.repo.update_item_estoque(
-                item.id_produto, item.id_unidade, quantidade=estoque_atual.quantidade - item.quantidade
+                item.id_produto, item.id_unidade, quantidade=nova_quantidade
             )
             movimentacao = await self.mov_estoque_repo.create(
                 id_produto=item.id_produto,
                 id_unidade=item.id_unidade,
                 tipo=TipoMovEstoque.SAIDA.value,
                 quantidade=-item.quantidade,
+                quantidade_apos=nova_quantidade,
             )
             resultados.append(MovEstoqueResponse.model_validate(movimentacao))
         return resultados

@@ -17,5 +17,6 @@ class MovEstoqueResponse(BaseModel):
     id_pedido: int | None
     tipo: str
     quantidade: int
+    quantidade_apos: int
     created_at: datetime
     model_config = {"from_attributes": True}

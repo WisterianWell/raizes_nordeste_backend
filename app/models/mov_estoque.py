@@ -13,4 +13,5 @@ class MovEstoque(Base):
     id_pedido: Mapped[int | None] = mapped_column(ForeignKey("pedidos.id_pedido"), index=True)
     tipo: Mapped[str] = mapped_column(String, index=True)
     quantidade: Mapped[int] = mapped_column(Integer)
+    quantidade_apos: Mapped[int] = mapped_column(Integer)
     created_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), default=lambda: datetime.now(timezone.utc))

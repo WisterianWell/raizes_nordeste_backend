@@ -65,6 +65,7 @@ class PedidoService:
         if not unidade.esta_aberta:
             raise common_errors.unidade_fechada()
         itens_list = []
+        estoques_apos = []
         valor_total = 0
         for index, item in enumerate(dados.itens):
             cardapio_item = await self.cardapio_repo.get_item_cardapio(item.id_produto, dados.id_unidade)
@@ -98,8 +99,10 @@ class PedidoService:
                 "quantidade": item.quantidade,
                 "preco_unitario": preco_unitario,
             })
+            nova_quantidade = estoque_item.quantidade - item.quantidade
+            estoques_apos.append(nova_quantidade)
             await self.estoque_repo.update_item_estoque(
-                item.id_produto, dados.id_unidade, quantidade=estoque_item.quantidade - item.quantidade
+                item.id_produto, dados.id_unidade, quantidade=nova_quantidade
             )
         pedido = await self.repo.create_pedido(
             itens=itens_list,
@@ -109,13 +112,14 @@ class PedidoService:
             status_pedido=StatusPedido.PENDENTE.value,
             valor_total=valor_total,
         )
-        for item in itens_list:
+        for item, quantidade_apos in zip(itens_list, estoques_apos):
             await self.mov_estoque_repo.create(
                 id_produto=item["id_produto"],
                 id_unidade=dados.id_unidade,
                 id_pedido=pedido.id_pedido,
                 tipo=TipoMovEstoque.VENDA.value,
                 quantidade=-item["quantidade"],
+                quantidade_apos=quantidade_apos,
             )
         return PedidoResponse.model_validate(pedido)
 
@@ -181,8 +185,9 @@ class PedidoService:
         for item in pedido.itens:
             estoque_item = await self.estoque_repo.get_item_estoque(item.id_produto, pedido.id_unidade)
             if estoque_item:
+                nova_quantidade = estoque_item.quantidade + item.quantidade
                 await self.estoque_repo.update_item_estoque(
-                    item.id_produto, pedido.id_unidade, quantidade=estoque_item.quantidade + item.quantidade
+                    item.id_produto, pedido.id_unidade, quantidade=nova_quantidade
                 )
                 await self.mov_estoque_repo.create(
                     id_produto=item.id_produto,
@@ -190,6 +195,7 @@ class PedidoService:
                     id_pedido=pedido.id_pedido,
                     tipo=TipoMovEstoque.CANCELAMENTO.value,
                     quantidade=item.quantidade,
+                    quantidade_apos=nova_quantidade,
                 )
         pagamento_aprovado = next(
             (p for p in pedido.pagamentos if p.status == StatusPagamento.APROVADO.value), None
