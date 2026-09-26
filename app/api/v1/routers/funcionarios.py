@@ -17,7 +17,7 @@ router = APIRouter()
 def get_funcionario_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> FuncionarioService:
     return FuncionarioService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar funcionário")
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Cadastrar funcionário")
 async def create_funcionario(
     data: FuncionarioRequest,
     service: Annotated[FuncionarioService, Depends(get_funcionario_service)],

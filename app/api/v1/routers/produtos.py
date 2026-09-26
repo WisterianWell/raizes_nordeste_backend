@@ -15,7 +15,7 @@ router = APIRouter()
 def get_produto_service(db: Annotated[AsyncSession, Depends(get_db_session)]) -> ProdutoService:
     return ProdutoService(db)
 
-@router.post("/", status_code=status.HTTP_201_CREATED, summary="Criar produto")
+@router.post("/", status_code=status.HTTP_201_CREATED, summary="Cadastrar produto")
 async def create_produto(
     data: ProdutoRequest,
     service: Annotated[ProdutoService, Depends(get_produto_service)],
