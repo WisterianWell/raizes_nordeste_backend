@@ -1,0 +1,723 @@
+{
+  "info": {
+    "_postman_id": "b4e6f0b2-6c1e-4b2a-9c7a-6f5b1e2a3d10",
+    "name": "Raízes Nordeste - Testes de API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [{ "key": "token", "value": "{{access_token}}", "type": "string" }]
+  },
+  "variable": [
+    { "key": "baseUrl", "value": "http://localhost:8000", "type": "string" },
+    { "key": "admin_email", "value": "admin@raizesnordeste.com", "type": "string" },
+    { "key": "admin_senha", "value": "senhaprovisoria", "type": "string" },
+    { "key": "access_token", "value": "", "type": "string" },
+    { "key": "access_token_atendente", "value": "", "type": "string" },
+    { "key": "access_token_cliente", "value": "", "type": "string" },
+    { "key": "id_unidade", "value": "", "type": "string" },
+    { "key": "id_funcionario_atendente", "value": "", "type": "string" },
+    { "key": "id_cliente", "value": "", "type": "string" },
+    { "key": "id_produto_tapioca", "value": "", "type": "string" },
+    { "key": "id_produto_cuscuz", "value": "", "type": "string" },
+    { "key": "id_pedido", "value": "", "type": "string" },
+    { "key": "id_pedido_recusado", "value": "", "type": "string" }
+  ],
+  "item": [
+    {
+      "name": "Auth",
+      "item": [
+        {
+          "name": "Login válido",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "{{admin_email}}", "type": "text" },
+                { "key": "password", "value": "{{admin_senha}}", "type": "text" },
+                { "key": "grant_type", "value": "password", "type": "text" }
+              ]
+            },
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "T01 - Login com token válido.\nPré-condição: usuário já deve estar cadastrado (admin seedado via ADMIN_EMAIL/ADMIN_SENHA).\nEntrada: {username, password} - e-mail e senha do admin.\nSaída esperada: 200, access_token e refresh_token."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Retornou access_token e refresh_token\", () => {",
+                  "    pm.expect(data).to.have.property(\"access_token\");",
+                  "    pm.expect(data).to.have.property(\"refresh_token\");",
+                  "});",
+                  "pm.collectionVariables.set(\"access_token\", data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Acesso sem token",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/produtos/",
+            "description": "T02 - Acesso sem token.\nPré-condição: nenhuma (sem header Authorization).\nEntrada: GET /v1/produtos/ sem token.\nSaída esperada: 401, envelope de erro padrão {error, message, details, timestamp, path}."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 401\", () => pm.response.to.have.status(401));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Envelope de erro padrão\", () => {",
+                  "    pm.expect(data).to.have.property(\"error\");",
+                  "    pm.expect(data).to.have.property(\"message\");",
+                  "});",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Setup (dados base)",
+      "item": [
+        {
+          "name": "Cadastrar unidade - Recife Centro",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\": \"Raízes do Nordeste - Recife Centro\", \"endereco\": \"Rua Exemplo, 100 - Recife/PE\", \"telefone\": \"77777777777\", \"esta_aberta\": true}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/unidades/",
+            "description": "Pré-condição: logado como ADMIN.\nEntrada/saída conforme exemplo do endpoint POST /v1/unidades/ no relatório (5.5.1).\nSaída esperada: 201, id_unidade salvo."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"id_unidade\", data.id_unidade);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar funcionário - Carlos (ATENDENTE)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_unidade\": {{id_unidade}}, \"nome\": \"Carlos\", \"email\": \"carlos@exemplo.com\", \"cpf\": \"12345678911\", \"telefone\": \"00000000000\", \"senha\": \"senha123\", \"cargo\": \"ATENDENTE\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/funcionarios/",
+            "description": "Pré-condição: logado como ADMIN; unidade criada no passo anterior.\nEntrada/saída conforme exemplo do endpoint POST /v1/funcionarios/ no relatório (5.4.1).\nSaída esperada: 201, id_funcionario salvo. Carlos é usado em T03 (perfil sem permissão)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"id_funcionario_atendente\", data.id_funcionario);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login - Carlos (Atendente)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "carlos@exemplo.com", "type": "text" },
+                { "key": "password", "value": "senha123", "type": "text" },
+                { "key": "grant_type", "value": "password", "type": "text" }
+              ]
+            },
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "Pré-condição: Carlos cadastrado no passo anterior.\nSaída esperada: 200, access_token salvo em access_token_atendente (usado em T03)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"access_token_atendente\", data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar cliente - Maria",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\": \"Maria\", \"email\": \"maria@exemplo.com\", \"cpf\": \"12345678910\", \"telefone\": \"99999999999\", \"senha\": \"senha123\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/clientes/",
+            "description": "Pré-condição: nenhuma (cadastro de cliente é público).\nEntrada/saída conforme exemplo do endpoint POST /v1/clientes/ no relatório (5.3.1).\nSaída esperada: 201, id_cliente salvo. Maria é quem cria os pedidos em T06/T07/T08."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"id_cliente\", data.id_cliente);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Login - Maria (Cliente)",
+          "request": {
+            "auth": { "type": "noauth" },
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "urlencoded",
+              "urlencoded": [
+                { "key": "username", "value": "maria@exemplo.com", "type": "text" },
+                { "key": "password", "value": "senha123", "type": "text" },
+                { "key": "grant_type", "value": "password", "type": "text" }
+              ]
+            },
+            "url": "{{baseUrl}}/v1/auth/login",
+            "description": "Pré-condição: Maria cadastrada no passo anterior.\nSaída esperada: 200, access_token salvo em access_token_cliente (usado nos pedidos e pagamentos)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"access_token_cliente\", data.access_token);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar produto - Tapioca de carne com queijo",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\": \"Tapioca de carne com queijo\", \"categoria\": \"Tapiocas\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/produtos/",
+            "description": "Pré-condição: logado como ADMIN.\nSaída esperada: 201, id_produto salvo em id_produto_tapioca."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"id_produto_tapioca\", data.id_produto);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Cadastrar produto - Cuscuz",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\": \"Cuscuz\", \"categoria\": \"Cuscuz\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/produtos/",
+            "description": "Pré-condição: logado como ADMIN.\nSaída esperada: 201, id_produto salvo em id_produto_cuscuz."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"id_produto_cuscuz\", data.id_produto);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adicionar Tapioca ao cardápio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_produto\": {{id_produto_tapioca}}, \"id_unidade\": {{id_unidade}}, \"preco\": 24.99, \"estoque\": 50, \"ativo\": true}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/cardapios/",
+            "description": "Pré-condição: produto e unidade já criados.\nEntrada/saída conforme exemplo do endpoint POST /v1/cardapios/ no relatório (5.7.1).\nSaída esperada: 201, estoque = 50."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Estoque cadastrado corretamente\", () => pm.expect(data.estoque).to.eql(50));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Adicionar Cuscuz ao cardápio",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_produto\": {{id_produto_cuscuz}}, \"id_unidade\": {{id_unidade}}, \"preco\": 19.99, \"estoque\": 30, \"ativo\": true}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/cardapios/",
+            "description": "Pré-condição: produto e unidade já criados.\nSaída esperada: 201, estoque = 30. Preço 19.99 casa com o subtotal do item 2 no exemplo de pedido do relatório (5.10.1)."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Estoque cadastrado corretamente\", () => pm.expect(data.estoque).to.eql(30));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Autorização",
+      "item": [
+        {
+          "name": "Perfil sem permissão",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_atendente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_unidade\": {{id_unidade}}, \"data_inicio\": \"2026-09-26T20:40:32Z\", \"data_fim\": \"2026-09-30T20:40:32Z\", \"itens\": [{\"id_produto\": {{id_produto_tapioca}}, \"tipo_desc\": \"PERCENTUAL\", \"valor_desc\": 10}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/promocoes/",
+            "description": "T03 - Acesso com perfil sem permissão.\nPré-condição: logado como Carlos, cargo ATENDENTE (criar promoção exige ADMIN/GERENTE, ver 5.8.1).\nEntrada: mesmo body de exemplo do endpoint POST /v1/promocoes/ no relatório.\nSaída esperada: 403, error=CARGO_NAO_PERMITIDO."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 403\", () => pm.response.to.have.status(403));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Erro CARGO_NAO_PERMITIDO\", () => pm.expect(data.error).to.eql(\"CARGO_NAO_PERMITIDO\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Produtos",
+      "item": [
+        {
+          "name": "Campo obrigatório ausente",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"nome\": \"Tapioca de carne\"}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/produtos/",
+            "description": "T04 - Campo obrigatório ausente.\nPré-condição: logado como ADMIN.\nEntrada: cadastro de produto sem o campo obrigatório 'categoria' (mesmo exemplo de erro do relatório, 5.6.1).\nSaída esperada: 422, error=VALIDATION_ERROR, details aponta o campo categoria."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Detalhe aponta o campo categoria\", () => {",
+                  "    const campos = data.details.map((d) => d.field).join(\",\");",
+                  "    pm.expect(campos).to.include(\"categoria\");",
+                  "});",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Estoque",
+      "item": [
+        {
+          "name": "Quantidade inválida (formato)",
+          "request": {
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"itens\": [{\"id_produto\": {{id_produto_tapioca}}, \"id_unidade\": {{id_unidade}}, \"quantidade\": -5}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/estoque/entrada",
+            "description": "T05 - Tipo/formato inválido (quantidade negativa).\nPré-condição: logado como ADMIN.\nEntrada: quantidade = -5 (mesmo exemplo de erro do relatório, 5.9.2).\nSaída esperada: 422, error=VALIDATION_ERROR, details aponta itens.0.quantidade."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 422\", () => pm.response.to.have.status(422));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Detalhe aponta a quantidade\", () => {",
+                  "    const campos = data.details.map((d) => d.field).join(\",\");",
+                  "    pm.expect(campos).to.include(\"quantidade\");",
+                  "});",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pedidos",
+      "item": [
+        {
+          "name": "Pedido com itens válidos",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_cliente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_unidade\": {{id_unidade}}, \"canal\": \"PICKUP\", \"itens\": [{\"id_produto\": {{id_produto_tapioca}}, \"quantidade\": 2}, {\"id_produto\": {{id_produto_cuscuz}}, \"quantidade\": 1}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/pedidos/",
+            "description": "T06 - Pedido com itens válidos.\nPré-condição: Maria autenticada (obrigatório para canal PICKUP); cardápio com Tapioca e Cuscuz cadastrados.\nEntrada: mesmo body de exemplo do relatório (5.10.1) - canal PICKUP, 2x Tapioca + 1x Cuscuz. id_cliente não é enviado: vem do token.\nSaída esperada: 201, status_pedido = PENDENTE."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Status inicial é PENDENTE\", () => pm.expect(data.status_pedido).to.eql(\"PENDENTE\"));",
+                  "pm.collectionVariables.set(\"id_pedido\", data.id_pedido);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedido com unidade inexistente",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_cliente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_unidade\": 999999, \"canal\": \"PICKUP\", \"itens\": [{\"id_produto\": {{id_produto_tapioca}}, \"quantidade\": 1}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/pedidos/",
+            "description": "T07 - Pedido com produto/unidade inexistente.\nPré-condição: Maria autenticada.\nEntrada: id_unidade = 999999 (não existe).\nSaída esperada: 404, error=UNIDADE_NAO_ENCONTRADA."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 404\", () => pm.response.to.have.status(404));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pedido com estoque insuficiente",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_cliente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_unidade\": {{id_unidade}}, \"canal\": \"PICKUP\", \"itens\": [{\"id_produto\": {{id_produto_tapioca}}, \"quantidade\": 9999}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/pedidos/",
+            "description": "T08 - Pedido com estoque insuficiente.\nPré-condição: Maria autenticada; estoque de Tapioca bem menor que 9999.\nEntrada: quantidade = 9999.\nSaída esperada: 409, error=ESTOQUE_INSUFICIENTE."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 409\", () => pm.response.to.have.status(409));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Pagamentos",
+      "item": [
+        {
+          "name": "Pagamento aprovado",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_cliente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"forma_pagamento\": \"PIX\", \"force_status\": \"APROVADO\", \"pontos_resgatados\": 0}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/pagamentos/{{id_pedido}}",
+            "description": "T09 - Pagamento mock aprovado e status atualizado.\nPré-condição: pedido criado em T06, ainda sem pagamento.\nEntrada: mesmo body de exemplo do relatório (5.11.1).\nSaída esperada: 201, status = APROVADO; status_pagamento do pedido passa a APROVADO."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Pagamento aprovado\", () => pm.expect(data.status).to.eql(\"APROVADO\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Setup - Criar segundo pedido (para pagamento recusado)",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_cliente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"id_unidade\": {{id_unidade}}, \"canal\": \"PICKUP\", \"itens\": [{\"id_produto\": {{id_produto_tapioca}}, \"quantidade\": 1}]}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/pedidos/",
+            "description": "Pré-condição: um pedido não pode ser pago duas vezes (PEDIDO_JA_PAGO), então T10 precisa de um pedido novo.\nSaída esperada: 201, id_pedido salvo em id_pedido_recusado."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.collectionVariables.set(\"id_pedido_recusado\", data.id_pedido);",
+                  "}"
+                ]
+              }
+            }
+          ]
+        },
+        {
+          "name": "Pagamento recusado",
+          "request": {
+            "auth": {
+              "type": "bearer",
+              "bearer": [{ "key": "token", "value": "{{access_token_cliente}}", "type": "string" }]
+            },
+            "method": "POST",
+            "header": [{ "key": "Content-Type", "value": "application/json" }],
+            "body": {
+              "mode": "raw",
+              "raw": "{\"forma_pagamento\": \"PIX\", \"force_status\": \"RECUSADO\", \"pontos_resgatados\": 0}",
+              "options": { "raw": { "language": "json" } }
+            },
+            "url": "{{baseUrl}}/v1/pagamentos/{{id_pedido_recusado}}",
+            "description": "T10 - Pagamento mock recusado.\nPré-condição: segundo pedido criado, ainda sem pagamento.\nEntrada: force_status RECUSADO (gateway mock).\nSaída esperada: 201, status = RECUSADO."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 201\", () => pm.response.to.have.status(201));",
+                  "const data = pm.response.json();",
+                  "pm.test(\"Pagamento recusado\", () => pm.expect(data.status).to.eql(\"RECUSADO\"));",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "Auditoria",
+      "item": [
+        {
+          "name": "Log de ação sensível (criação do pedido)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": "{{baseUrl}}/v1/auditoria/?entidade=PEDIDO&acao=CRIACAO&id_entidade={{id_pedido}}",
+            "description": "T11 - Ação sensível gerando registro de auditoria.\nPré-condição: logado como ADMIN; pedido criado em T06 (ação sensível CRIACAO/PEDIDO).\nEntrada: filtro entidade=PEDIDO, acao=CRIACAO, id_entidade do pedido de T06 (mesmo padrão de filtro do relatório, 5.13.1).\nSaída esperada: 200, lista com ao menos 1 log referente ao pedido criado em T06."
+          },
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "{",
+                  "pm.test(\"Status 200\", () => pm.response.to.have.status(200));",
+                  "const logs = pm.response.json();",
+                  "pm.test(\"Existe ao menos um log de criação de pedido\", () => pm.expect(logs.length).to.be.above(0));",
+                  "const idPedido = parseInt(pm.collectionVariables.get(\"id_pedido\"));",
+                  "pm.test(\"Log corresponde ao pedido criado em T06\", () => {",
+                  "    const encontrado = logs.some((log) => log.id_entidade === idPedido);",
+                  "    pm.expect(encontrado).to.be.true;",
+                  "});",
+                  "}"
+                ]
+              }
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

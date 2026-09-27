@@ -4,10 +4,11 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo
 from app.database import get_db_session
-from app.domain.enums import CargoFunc
+from app.domain.enums import AcaoAuditoria, CargoFunc
 from app.models.funcionario import Funcionario
 from app.domain.cargos import CARGOS_ADMIN
 from app.schemas.produto_schemas import ProdutoRequest, ProdutoResponse, ProdutoUpdate
+from app.services.auditoria_service import registrar_log
 from app.services.produto_service import ProdutoService
 
 router = APIRouter()
@@ -23,7 +24,11 @@ async def create_produto(
         requer_cargo(CargoFunc.ADMIN)
         )],
 ) -> ProdutoResponse:
-    return await service.create_produto(data)
+    produto = await service.create_produto(data)
+    await registrar_log(
+        AcaoAuditoria.CRIACAO, "PRODUTO", usuario=current_usuario, id_entidade=produto.id_produto,
+    )
+    return produto
 
 @router.get("/{id_produto}", summary="Buscar produto por ID")
 async def get_produto_by_id(
@@ -56,7 +61,13 @@ async def update_produto(
         requer_cargo(CargoFunc.ADMIN)
         )],
 ) -> ProdutoResponse:
-    return await service.update_produto(id_produto, data)
+    produto = await service.update_produto(id_produto, data)
+    campos_alterados = list(data.model_dump(exclude_unset=True).keys())
+    await registrar_log(
+        AcaoAuditoria.ATUALIZACAO, "PRODUTO", usuario=current_usuario,
+        id_entidade=id_produto, detalhes={"campos_alterados": campos_alterados},
+    )
+    return produto
 
 @router.delete("/{id_produto}", status_code=status.HTTP_204_NO_CONTENT, summary="Excluir produto")
 async def delete_produto(
@@ -67,3 +78,6 @@ async def delete_produto(
         )],
 ):
     await service.delete_produto(id_produto)
+    await registrar_log(
+        AcaoAuditoria.EXCLUSAO, "PRODUTO", usuario=current_usuario, id_entidade=id_produto,
+    )
