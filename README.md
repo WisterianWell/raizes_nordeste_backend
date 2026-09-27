@@ -22,6 +22,11 @@ O arquivo .env é obrigatório. Crie-o a partir do exemplo:
 cp .env.example .env
 ```
 
+# Como iniciar o Docker
+```bash
+docker compose up -d --build
+```
+
 # Instalação das dependências
 ```bash
 python -m venv .venv
@@ -33,11 +38,14 @@ pip install -r requirements.txt
 
 # Como iniciar a API
 ```bash
-docker compose up -d --build
-
 uvicorn app.main:app --reload
 ```
 A API fica disponível em http://localhost:8000/docs
+
+# Como resetar o banco de dados
+```bash
+docker compose down -v
+```
 
 # Fluxo inicial da API (Swagger)
 Reproduza essas etapas antes de testar o fluxo critico de pedidos e movimentaçóes de estoque:
@@ -65,7 +73,7 @@ Pré-requisitos:
 - importe docs/postman/raizes-nordeste.postman_collection.json para o postman.
 - Ajuste a variável de coleção baseUrl se a API não estiver em http://localhost:8000.
 - Rode manualmente pasta por pasta na ordem dos testes ou use Collection Runner.
-- A coleção espera um banco vazio (os cadastros usam e-mails fixos). Para rodar novamente, recrie o banco com docker compose down -vt e suba a API de novo.
+- A coleção espera um banco vazio (os cadastros usam e-mails fixos). Para rodar novamente, recrie o banco de dados e suba a API de novo.
 
 
 # Estrutura do projeto
@@ -85,4 +93,3 @@ app/
 └── main.py         # Factory da aplicação
 docs/
 └── postman/        # Coleção Postman com os cenários de teste
-
