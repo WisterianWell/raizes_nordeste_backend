@@ -4,7 +4,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 
 from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
-from app.domain.enums import AcaoAuditoria
+from app.domain.enums import AcaoAuditoria, CargoFunc
 from app.models.funcionario import Funcionario
 from app.domain.cargos import CARGOS_ADMIN
 from app.schemas.promocao_schemas import PromocaoRequest, PromocaoResponse, PromocaoUpdate
@@ -44,6 +44,10 @@ async def get_promocoes(
     offset: int = 0,
     limit: int = 10,
 ) -> list[PromocaoResponse]:
+    if current_usuario.cargo != CargoFunc.ADMIN.value:
+        if id_unidade is not None:
+            verificar_mesma_unidade(current_usuario, id_unidade)
+        id_unidade = current_usuario.id_unidade
     return await service.get_promocoes(id_produto, id_unidade, ativo, offset, limit)
 
 @router.get("/{id_promocao}", summary="Buscar promoção por ID")
@@ -54,7 +58,9 @@ async def get_promocao_by_id(
         requer_cargo(*CARGOS_ADMIN)
         )],
 ) -> PromocaoResponse:
-    return await service.get_promocao_by_id(id_promocao)
+    promocao = await service.get_promocao_by_id(id_promocao)
+    verificar_mesma_unidade(current_usuario, promocao.id_unidade)
+    return promocao
 
 @router.patch("/{id_promocao}", summary="Atualizar promoção")
 async def update_promocao(

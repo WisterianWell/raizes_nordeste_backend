@@ -2,8 +2,9 @@ from typing import Annotated
 from fastapi import APIRouter, Depends
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.dependencies import requer_cargo
+from app.dependencies import requer_cargo, verificar_mesma_unidade
 from app.database import get_db_session
+from app.domain.enums import CargoFunc
 from app.models.funcionario import Funcionario
 from app.domain.cargos import CARGOS_ADMIN
 from app.schemas.auditoria_schemas import LogAuditoriaResponse
@@ -28,4 +29,8 @@ async def get_logs_auditoria(
     offset: int = 0,
     limit: int = 10,
 ) -> list[LogAuditoriaResponse]:
+    if current_usuario.cargo != CargoFunc.ADMIN.value:
+        if id_unidade is not None:
+            verificar_mesma_unidade(current_usuario, id_unidade)
+        id_unidade = current_usuario.id_unidade
     return await service.get_logs(entidade, id_entidade, id_usuario, acao, id_unidade, offset, limit)
